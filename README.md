@@ -7,5 +7,16 @@
 ```
 git clone https://github.com/ShichaoMa/webWalker.git
 ```
-# DECUMENTION
+
+# USAGE
+```
+# 打开redis
+# 配置好redis地址
+# 打开爬虫
+scrapy crawl bluefly
+# 投入任务
+python redis_feed.py -c test_01 -s bluefly -u "http://www.bluefly.com/assortment/the-boot-shop-overarching/women/shoes"
+```
+
+# DECUMENT
 参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
