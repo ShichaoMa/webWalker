@@ -8,4 +8,4 @@
 git clone https://github.com/ShichaoMa/webWalker.git
 ```
 # DECUMENTION
-参见[wiki]()
+参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
