@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
 import os
+import math
 import traceback
-
 import openpyxl
+
+from urllib import quote
+from urllib2 import Request, urlopen
+
 from scrapy import Item
 from scrapy.signals import spider_closed
 
@@ -49,6 +53,74 @@ class LoggingBeforePipeline(BasePipeline):
         elif isinstance(item, Item):
             self.logger.error('Scraper Retry')
             return None
+
+
+class CoordinatePipeline(BasePipeline):
+    '''
+       Logs the crawl for successfully pushing to Kafka
+       '''
+
+    def __init__(self, settings):
+        super(CoordinatePipeline, self).__init__(settings)
+        self.logger.debug("Setup file pipeline")
+        self.files = {}
+        self.setup()
+
+    def mercator2wgs84(self, mercator):
+        point_x = mercator[0]
+        point_y = mercator[1]
+        x = point_x / 20037508.3427892 * 180 - 0.001375
+        y = point_y / 20037508.3427892 * 180
+        y = 180 / math.pi * (2 * math.atan(math.exp(y * math.pi / 180)) - math.pi / 2) + 0.18574
+        return (x, y)
+
+    def get_point(self, address, item):
+        url = "http://api.map.baidu.com/?qt=s&c=288&wd=%s&rn=10&ie=utf-8" \
+               "&oue=1&fromproduct=jsapi&res=api&callback=" % quote(address.encode("utf-8"))
+        req = Request(url=url)
+        resp = urlopen(req)
+        buf = resp.read()
+        dic = json.loads(buf)
+        if "content" in dic:
+            content = dic["content"]
+            if isinstance(content, list) and len(content):
+                content = content[0]
+            else:
+                self.crawler.stats.set_failed_download(item, "content type:%s can not get point: %s"%
+                                                       (type(content), address))
+                return {"lng": 0, "lat": 0}
+            x, y = self.mercator2wgs84([content["x"] / 100, content["y"] / 100])
+            return {"lng": x, "lat": y}
+
+    def create(self, crawlid):
+        file_name = "task/%s_%s.json" % (self.crawler.spidercls.name, crawlid)
+        fileobj = open(file_name, "w")
+        fileobj.write("[")
+        self.files[file_name] = fileobj
+        return fileobj
+
+    def setup(self):
+        if not os.path.exists("task"):
+            os.mkdir("task")
+
+    def process_item(self, item, spider):
+        self.logger.debug("Processing item in FilePipeline")
+        if isinstance(item, spider.base_item_cls):
+            crawlid = item["crawlid"]
+            adr = item["address"]
+            item["point"] = self.get_point(adr, item)
+            file_name = "task/%s_%s.json" % (spider.name, crawlid)
+            fileobj = self.files.get(file_name) or self.create(crawlid)
+            fileobj.write("%s\n,"%json.dumps(dict(item)))
+            item["success"] = True
+        return item
+
+    def spider_closed(self):
+        self.logger.info("close file...")
+        for fileobj in self.files.values():
+            fileobj.seek(-1, 1)
+            fileobj.write("]")
+            fileobj.close()
 
 
 class ExcelPipeline(BasePipeline):

@@ -218,9 +218,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
         else:
             request.meta["url"] = request.url
             if request.meta.get("callback") == "parse":
-                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'],
-                                                     spiderid=request.meta['spiderid'],
-                                                     appid=request.meta['appid'])
+                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
                 self.logger.error(exception)
                 self.logger.error("in retry request error %s" %traceback.format_exc())
             spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
@@ -244,9 +242,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
         else:
             request.meta["url"] = request.url
             if request.meta.get("callback") == "parse":
-                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'],
-                                                     spiderid=request.meta['spiderid'],
-                                                     appid=request.meta['appid'])
+                spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
             self.logger.error(
                 "in %s retry request error to failed pages url:%s, exception:%s, meta:%s" % (get_ip_address(),
                 request.url, reason, request.meta))

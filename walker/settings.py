@@ -6,34 +6,17 @@
 import pkgutil
 
 # Specify the host and port to use when connecting to Redis.
-REDIS_HOST = '192.168.200.58'
+REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
 
-# Kafka server information
-KAFKA_HOSTS = '192.168.200.58:9092'
-KAFKA_TOPIC_PREFIX = 'jay'
-KAFKA_APPID_TOPICS = False
-# base64 encode the html body to avoid json dump errors due to malformed text
-KAFKA_BASE_64_ENCODE = False
+CUSTOM_REDIS = True
 
 RETRY_HTTP_CODES = [500, 502, 503, 504, 400, 408, 403, 304]
-
-ZOOKEEPER_ASSIGN_PATH = '/scrapy-cluster/crawler/'
-ZOOKEEPER_ID = 'all'
-ZOOKEEPER_HOSTS = '192.168.200.58:2181'
-
-PUBLIC_IP_URL = 'http://ip.42.pl/raw'
-IP_ADDR_REGEX = '(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
-
 # Don't cleanup redis queues, allows to pause/resume crawls.
 SCHEDULER_PERSIST = True
 
 # seconds to wait between seeing new queues, cannot be faster than spider_idle time of 5
 SCHEDULER_QUEUE_REFRESH = 10
-
-# throttled queue defaults per domain, x hits in a y second window
-QUEUE_HITS = 1000
-QUEUE_WINDOW = 60
 
 # we want the queue to produce a consistent pop flow
 QUEUE_MODERATED = True
@@ -48,17 +31,7 @@ CONCURRENT_REQUESTS = 4
 CONCURRENT_REQUESTS_PER_DOMAIN = 4
 CONCURRENT_REQUESTS_PER_IP = 4
 
-# amazon banned how often to sleep
-SLEEP_STANDARD = 0.99
-SLEEP_MINUTES = 120
-SLEEP_ON = False
-
 USER_AGENT_LIST = pkgutil.get_data('walker', 'user_agents.list')
-
-# retry times
-PROCESSING_EXCEPTION_RETRY_TIMES = 20
-
-BANNED_RETRY_TIMES = 10
 
 # 500+ retry times
 RETRY_TIMES = 20
@@ -70,12 +43,6 @@ REDIRECT_MAX_TIMES = 20
 
 REDIRECT_PRIORITY_ADJUST = -1
 
-VALIDATE_LIMIT = 100
-
-REPOSITORY_MAX = 10000
-
-CAPTCHA_ADDR = "192.168.200.200"
-CAPTCHA_port = 8887
 
 CHECK_URL = "https://www.amazon.com/gp/product/B000EXAAJE/ref=twister_dp_update?ie=UTF8&psc=1"
 
@@ -121,12 +88,8 @@ SC_LOG_MAX_BYTES = '10MB'
 SC_LOG_BACKUPS = 5
 PRINT_DEBUG = False
 TO_KAFKA = False
-
-VALIDATE_DEBUG = True
-
-PROXY_CHECK_TIMEOUT = 10
-
-PROXY_VALIDATE_TIMEOUT = 20
+# Kafka server information
+KAFKA_HOSTS = '192.168.200.58:9092'
 
 
 STATS_RESPONSE_CODES = [
@@ -202,9 +165,10 @@ DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': None,
     #'scrapy.contrib.downloadermiddleware.cookies.CookiesMiddleware': None,
     'scrapy.downloadermiddlewares.cookies.CookiesMiddleware': None,
+    'walker.downloadermiddlewares.CustomRequestHeaderMiddleware': 390,
     'walker.downloadermiddlewares.CustomUserAgentMiddleware': 400,
     # Handle timeout retries with the redis scheduler and logger
-    'walker.downloadermiddlewares.RetryMiddleware': 510,
+    'walker.downloadermiddlewares.CustomRetryMiddleware': 510,
     #"walker.downloadermiddlewares.ProxyMiddleware": 511,
     # exceptions processed in reverse order
     # custom cookies to not persist across crawl requests
@@ -222,9 +186,6 @@ DOWNLOAD_TIMEOUT = 30
 
 # Avoid in-memory DNS cache. See Advanced topics of docs for info
 DNSCACHE_ENABLED = True
-
-COOKIES_PATH = "cookies/"
-
 
 
 # Local Overrides

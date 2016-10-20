@@ -1,7 +1,6 @@
 # -*- coding:utf-8 -*-
 import logging
 import sys
-import fcntl
 import os
 import re
 import errno
@@ -71,6 +70,7 @@ class Logger(object):
 
 def _get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    import fcntl
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(), 0x8915, struct.pack('256s', ifname[:15])
     )[20:24])
@@ -83,21 +83,25 @@ def _get_net_interface():
 
 
 def get_ip_address():
-
-    shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
-    try:
-        r = _get_ip_address(_get_net_interface())
-    except Exception:
+    if sys.platform == "win32":
+        hostname = socket.gethostname()
+        IPinfo = socket.gethostbyname_ex(hostname)
+        r = IPinfo[2][2]
+    else:
+        shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
         try:
-            r = _get_ip_address('enp0s25')
+            r = _get_ip_address(_get_net_interface())
         except Exception:
             try:
-                r = _get_ip_address('enp0s8')
+                r = _get_ip_address('enp0s25')
             except Exception:
                 try:
-                    r = _get_ip_address('ens32')
+                    r = _get_ip_address('enp0s8')
                 except Exception:
-                    r = os.popen( shell_command ).read().strip()
+                    try:
+                        r = _get_ip_address('ens32')
+                    except Exception:
+                        r = os.popen( shell_command ).read().strip()
     return r
 
 

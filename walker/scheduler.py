@@ -2,8 +2,11 @@
 import json
 import random
 import re
-
-from redis import Redis
+from settings import CUSTOM_REDIS
+if CUSTOM_REDIS:
+    from custom_redis.client import Redis
+else:
+    from redis import Redis
 from scrapy.http.request import Request
 
 import tldextract
@@ -61,7 +64,10 @@ class Scheduler(Logger):
             sid=req_dict['meta']['spiderid'],
             dom=ex_res.domain,
             suf=ex_res.suffix)
-        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["priority"]))
+        if self.settings.get("CUSTOM_REDIS"):
+            self.redis_conn.zadd(key, -int(req_dict["priority"]), json.dumps(req_dict))
+        else:
+            self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
@@ -75,14 +81,18 @@ class Scheduler(Logger):
             self.logger.info("length of queue %s is %s" %
                              (queue, self.redis_conn.zcard(queue)))
             # 自定义redis可以使用此api
-            # item = self.redis_conn.zpop(queue)
-            pipe = self.redis_conn.pipeline()
-            pipe.multi()
-            pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
-            result, count = pipe.execute()
+            #
+            if self.settings.get("CUSTOM_REDIS"):
+                item = self.redis_conn.zpop(queue)
+            else:
+                pipe = self.redis_conn.pipeline()
+                pipe.multi()
+                pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
+                result, count = pipe.execute()
+                item = result[0]
 
-            if result:
-                item = json.loads(result[0])
+            if item:
+                item = json.loads(item)
 
                 try:
                     req = Request(item['url'])

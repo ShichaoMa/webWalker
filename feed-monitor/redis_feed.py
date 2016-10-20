@@ -1,7 +1,13 @@
 # -*- coding:utf-8 -*-
+import sys
 import argparse
 import traceback
-from redis import Redis, RedisError
+from settings import CUSTOM_REDIS
+if CUSTOM_REDIS:
+    from custom_redis.client import Redis
+    from custom_redis.client.errors import RedisError
+else:
+    from redis import Redis, RedisError
 from log_to_kafka import Logger
 from tldextract import extract
 
@@ -60,7 +66,10 @@ class RedisFeed(Logger):
 
     def feed(self, queue_name, req):
         try:
-            self.redis_conn.zadd(queue_name, req, -self.priority)
+            if self.settings.get("CUSTOM_REDIS"):
+                self.redis_conn.zadd(queue_name, -self.priority, req)
+            else:
+                self.redis_conn.zadd(queue_name, req, -self.priority)
             return 0
         except RedisError:
             traceback.print_exc()
@@ -75,9 +84,25 @@ class RedisFeed(Logger):
         str_failed_rate = "%.2f%%  " % failed_rate
         if num >= self.inc:
             self.inc += per
-            print "\r", str_success_rate,
-            print "%s%s" % (int(success_rate * 50 / 100) * '\033[42m \033[0m',
-                            int(failed_rate * 50 / 100) * '\033[41m \033[0m'), str_failed_rate,
+            if sys.platform == "win32":
+                import ctypes
+                std_out_handle = ctypes.windll.kernel32.GetStdHandle(-11)
+                color_ctl = ctypes.windll.kernel32.SetConsoleTextAttribute
+                color_ctl(std_out_handle, 2)
+                print "\r", str_success_rate,
+                color_ctl(std_out_handle, 32)
+                print int(success_rate * 30 / 100) * ' ',
+                if int(failed_rate):
+                    color_ctl(std_out_handle, 64)
+                    print int(failed_rate * 30 / 100) * ' ',
+                color_ctl(std_out_handle, 0)
+                color_ctl(std_out_handle, 4)
+                print str_failed_rate,
+                color_ctl(std_out_handle, 7)
+            else:
+                print "\r", str_success_rate,
+                print "%s%s" % (int(success_rate * 50 / 100) * '\033[42m \033[0m',
+                                int(failed_rate * 50 / 100) * '\033[41m \033[0m'), str_failed_rate,
         return success_rate, failed_rate
 
 if __name__ == "__main__":
