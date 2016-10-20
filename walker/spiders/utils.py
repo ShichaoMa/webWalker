@@ -56,7 +56,7 @@ class Logger(object):
             # set up to file
             try:
                 # try to make dir
-                os.makedirs(dir)
+                os.makedirs(my_dir)
             except OSError as exception:
                 if exception.errno != errno.EEXIST:
                     raise

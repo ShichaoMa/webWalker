@@ -81,7 +81,7 @@ SCHEUDLER_ITEM_RETRIES = 3
 
 # log setup scrapy cluster crawler
 SC_LOG_LEVEL = 'DEBUG'
-SC_LOG_STDOUT = "CONSOLE"
+SC_LOG_STDOUT = "FILE"
 SC_LOG_JSON = False
 SC_LOG_DIR = "logs"
 SC_LOG_MAX_BYTES = '10MB'
