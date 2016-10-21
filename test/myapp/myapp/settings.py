@@ -1,8 +1,6 @@
 # -*- coding:utf-8
 # This file houses all default settings for the Crawler
 # to override please use a custom localsettings.py file
-import sys
-sys.path.append("/home/ubuntu/myprojects/webWalker/")
 # Scrapy Cluster Settings
 # ~~~~~~~~~~~~~~~~~~~~~~~
 import pkgutil
