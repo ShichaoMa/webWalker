@@ -11,7 +11,7 @@ from custom_utils import *
 BASE_FIELD.extend([]) # 配置通用字段
 
 # 配置自定义字段
-ITEM_FIELD["zhanpin"] = [
+ITEM_FIELD["zhaopin"] = [
     ('id', {
         "extract": lambda item, response: re.search("zhaopin.com/(.*).htm", item["meta"]["url"]).group(1)
     }),

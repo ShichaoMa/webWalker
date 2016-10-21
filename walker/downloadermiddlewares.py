@@ -33,7 +33,7 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
             ua = settings.get('USER_AGENT', user_agent)
             self.user_agent_list = [ua]
         else:
-            self.user_agent_list = filter(lambda x: x.strip(), user_agent_list.split('\n'))
+            self.user_agent_list = map(lambda y: y.strip(), filter(lambda x: x.strip(), user_agent_list.split('\n')))
         self.default_agent = user_agent
         self.chicer = self.choice()
         self.user_agent = self.chicer.next() or user_agent

@@ -159,7 +159,7 @@ class ClusterSpider(Spider, Logger):
 
     def total_pages_decrement(self, response, id):
         crawlid = response.meta["crawlid"]
-        if id in self.redis_conn.smembers("crawlid:%s:model" % crawlid):
+        if self.redis_conn.sismember("crawlid:%s:model" % crawlid, id):
             self.crawler.stats.inc_total_pages(response.meta['crawlid'], -1)
             return False
         else:

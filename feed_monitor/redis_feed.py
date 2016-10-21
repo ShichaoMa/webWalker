@@ -68,10 +68,7 @@ class RedisFeed(Logger):
         else:
             from redis import RedisError
         try:
-            if self.settings.get("CUSTOM_REDIS"):
-                self.redis_conn.zadd(queue_name, -self.priority, req)
-            else:
-                self.redis_conn.zadd(queue_name, req, -self.priority)
+            self.redis_conn.zadd(queue_name, req, -self.priority)
             return 0
         except RedisError:
             traceback.print_exc()
