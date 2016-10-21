@@ -1,0 +1,16 @@
+# Redis host information
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+
+CUSTOM_REDIS = True
+
+# logging setup
+SC_LOG_LEVEL = 'INFO'
+SC_LOG_STDOUT = True
+SC_LOG_JSON = True
+SC_LOG_DIR = "logs"
+SC_LOG_MAX_BYTES = '10MB'
+SC_LOG_BACKUPS = 5
+
+TO_KAFKA = False
+KAFKA_HOSTS = '127.0.0.1:9092'

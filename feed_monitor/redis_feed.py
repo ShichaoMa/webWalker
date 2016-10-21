@@ -1,16 +1,10 @@
 # -*- coding:utf-8 -*-
+import os
 import sys
 import argparse
 import traceback
-from settings import CUSTOM_REDIS
-if CUSTOM_REDIS:
-    from custom_redis.client import Redis
-    from custom_redis.client.errors import RedisError
-else:
-    from redis import Redis, RedisError
 from log_to_kafka import Logger
 from tldextract import extract
-
 
 class RedisFeed(Logger):
 
@@ -37,6 +31,10 @@ class RedisFeed(Logger):
 
     def setup(self):
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
+        if self.settings.get("CUSTOM_REDIS"):
+            from custom_redis.client import Redis
+        else:
+            from redis import Redis
         self.redis_conn = Redis(host=self.settings.get("REDIS_HOST"),
                            port=self.settings.get("REDIS_PORT"))
         self.redis_conn.delete("crawlid:%s" % self.crawlid)
@@ -65,6 +63,10 @@ class RedisFeed(Logger):
         print "\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(sucess_rate, failed_rate)
 
     def feed(self, queue_name, req):
+        if self.settings.get("CUSTOM_REDIS"):
+            from custom_redis.client.errors import RedisError
+        else:
+            from redis import RedisError
         try:
             if self.settings.get("CUSTOM_REDIS"):
                 self.redis_conn.zadd(queue_name, -self.priority, req)

@@ -23,24 +23,6 @@ from spiders.exception_process import process_exception_method_wrapper, \
 from spiders.utils import Logger, get_ip_address
 
 
-class CustomRequestHeaderMiddleware(Logger):
-    """根据不同的spider定义不同的header"""
-
-    def __init__(self, settings):
-        self.set_logger(self.crawler)
-        self.headers = settings.get("HEADERS", {})
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        cls.crawler = crawler
-        obj = cls(crawler.settings)
-        return obj
-
-    @process_requset_method_wrapper
-    def process_request(self, request, spider):
-        request.headers.update(self.headers.get(spider.name, {}))
-
-
 class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
     def __init__(self, settings, user_agent='Scrapy'):
@@ -143,6 +125,7 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
 class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
     def __init__(self, settings):
+        self.settings = settings
         super(CustomCookiesMiddleware, self).__init__(settings.getbool('COOKIES_DEBUG'))
         self.current_cookies = {}
         self.set_logger(self.crawler)
@@ -160,8 +143,10 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         if 'dont_merge_cookies' in request.meta:
             return
 
+        headers = self.settings.get("HEADERS", {}).get(spider.name, {})
         cookiejarkey = request.meta.get("cookiejar", "default")
         jar = self.jars[cookiejarkey]
+        request.cookies.update(headers.get("Cookie", {}))
         cookies = self._get_request_cookies(jar, request)
         self.logger.debug("current cookies is %s" % cookies)
         for cookie in cookies:
@@ -169,6 +154,8 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         # set Cookie header
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
+        headers.pop('Cookie', None)
+        request.headers.update(headers)
 
         self._debug_cookie(request, spider)
 

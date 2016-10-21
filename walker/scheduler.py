@@ -2,15 +2,11 @@
 import json
 import random
 import re
-from settings import CUSTOM_REDIS
-if CUSTOM_REDIS:
-    from custom_redis.client import Redis
-else:
-    from redis import Redis
-from scrapy.http.request import Request
 
 import tldextract
 tldextract.tldextract.LOG.setLevel("INFO")
+
+from scrapy.http.request import Request
 
 from walker.spiders.utils import Logger
 
@@ -21,6 +17,11 @@ class Scheduler(Logger):
 
         self.settings = crawler.settings
         self.set_logger(crawler)
+
+        if self.settings.get("CUSTOM_REDIS"):
+            from custom_redis.client import Redis
+        else:
+            from redis import Redis
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.get("REDIS_PORT"))
         self.queue_name = "%s:*:queue"

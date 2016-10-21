@@ -35,7 +35,7 @@ class Logger(object):
     def init_logger(self, crawler):
         my_level = crawler.settings.get('SC_LOG_LEVEL', 'INFO')
         my_name = "%s_%s" % (crawler.spidercls.name, get_ip_address())
-        my_output = crawler.settings.get('SC_LOG_STDOUT', "FILE")
+        my_output = crawler.settings.get('SC_LOG_TYPE', "FILE")
         my_json = crawler.settings.get('SC_LOG_JSON', True)
         my_dir = crawler.settings.get('SC_LOG_DIR', 'logs')
         my_bytes = crawler.settings.get('SC_LOG_MAX_BYTES', '10MB')
@@ -197,5 +197,4 @@ def repl_wrapper(path, page_num):
         else:
             return path + sub_path
     return _repl
-
 

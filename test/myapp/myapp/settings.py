@@ -1,3 +1,4 @@
+# -*- coding:utf-8
 # This file houses all default settings for the Crawler
 # to override please use a custom localsettings.py file
 import sys
@@ -32,50 +33,20 @@ CONCURRENT_REQUESTS = 4
 CONCURRENT_REQUESTS_PER_DOMAIN = 4
 CONCURRENT_REQUESTS_PER_IP = 4
 
+# 自带了一些user_agents，可不改
 USER_AGENT_LIST = pkgutil.get_data('walker', 'user_agents.list')
 
 # 500+ retry times
 RETRY_TIMES = 20
 
-PROXY_LIST = pkgutil.get_data('walker', 'proxy.list')
+# 需要改
+PROXY_LIST = pkgutil.get_data('myapp', 'proxy.list')
 
 # redirect max times
 REDIRECT_MAX_TIMES = 20
 
 REDIRECT_PRIORITY_ADJUST = -1
 
-
-CHECK_URL = "https://www.amazon.com/gp/product/B000EXAAJE/ref=twister_dp_update?ie=UTF8&psc=1"
-
-'''
-----------------------------------------
-The below parameters configure how spiders throttle themselves across the cluster
-All throttling is based on the TLD of the page you are requesting, plus any of the
-following parameters:
-
-Type: You have different spider types and want to limit how often a given type of
-spider hits a domain
-
-IP: Your crawlers are spread across different IP's, and you want each IP crawler clump
-to throttle themselves for a given domain
-
-Combinations for any given Top Level Domain:
-None - all spider types and all crawler ips throttle themselves from one tld queue
-Type only - all spiders throttle themselves based off of their own type-based tld queue,
-    regardless of crawler ip address
-IP only - all spiders throttle themselves based off of their public ip address, regardless
-    of spider type
-Type and IP - every spider's throttle queue is determined by the spider type AND the
-    ip address, allowing the most fined grained control over the throttling mechanism
-'''
-# add Spider type to throttle mechanism
-SCHEDULER_TYPE_ENABLED = True
-
-# add ip address to throttle mechanism
-SCHEDULER_IP_ENABLED = True
-'''
-----------------------------------------
-'''
 
 # how many times to retry getting an item from the queue before the spider is considered idle
 SCHEUDLER_ITEM_RETRIES = 3
@@ -91,20 +62,6 @@ TO_KAFKA = False
 KAFKA_HOSTS = '192.168.200.58:9092'
 TOPIC = "log.incoming"
 
-
-STATS_RESPONSE_CODES = [
-    200,
-    404,
-    403,
-    504,
-]
-STATS_CYCLE = 5
-
-DEFAULT_REQUEST_HEADERS = {
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    "Accept-Language": "en-US,en;q=0.5",
-    "Accept-Encoding": "gzip, deflate",
-}
 
 HEADERS = {
     "ashford": {
@@ -128,24 +85,14 @@ HEADERS = {
                            },
                 }
 }
-# from time variables in scutils.stats_collector class
-STATS_TIMES = [
-    'SECONDS_15_MINUTE',
-    'SECONDS_1_HOUR',
-    'SECONDS_6_HOUR',
-    'SECONDS_12_HOUR',
-    'SECONDS_1_DAY',
-    'SECONDS_1_WEEK',
-]
 
-# Scrapy Settings
-# ~~~~~~~~~~~~~~~
 
-# Scrapy settings for distributed_crawling project
-#
+# 需要改
 BOT_NAME = 'myapp'
 
+# 需要改
 SPIDER_MODULES = ['myapp.spiders']
+# 需要改
 NEWSPIDER_MODULE = 'myapp.spiders'
 
 # Enables scheduling storing requests queue in redis.
