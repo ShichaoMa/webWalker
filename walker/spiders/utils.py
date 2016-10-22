@@ -7,11 +7,10 @@ import errno
 import socket
 import struct
 import psutil
-from cloghandler import ConcurrentRotatingFileHandler
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
-from log_to_kafka import LogFactory, KafkaHandler
+from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
 
 
 class LoggerDiscriptor(object):
@@ -35,11 +34,9 @@ class LoggerDiscriptor(object):
 class Logger(object):
 
     def set_logger(self, crawler):
-
         self.logger = LogFactory._instance or self.init_logger(crawler)
 
     def init_logger(self, crawler):
-
         my_level = crawler.settings.get('SC_LOG_LEVEL', 'INFO')
         my_name = "%s_%s" % (crawler.spidercls.name, get_ip_address())
         my_output = crawler.settings.get('SC_LOG_TYPE', "FILE")
@@ -62,15 +59,18 @@ class Logger(object):
         elif my_output == "KAFKA":
             logger.set_handler(KafkaHandler(crawler.settings))
         else:
-
             try:
                 os.makedirs(my_dir)
             except OSError as exception:
-
                 if exception.errno != errno.EEXIST:
                     raise
 
-            file_handler = ConcurrentRotatingFileHandler(my_dir + '/' + my_file,
+            if os.name == "nt":
+                handler = FixedConcurrentRotatingFileHandler
+            else:
+                handler = ConcurrentRotatingFileHandler
+
+            file_handler = handler(my_dir + '/' + my_file,
                                                          maxBytes=my_bytes,
                                                          backupCount=my_backups)
             logger.set_handler(file_handler)

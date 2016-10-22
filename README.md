@@ -13,6 +13,8 @@
 # INSTALL
 ## ubuntu && windows
 ```
+需要python2.7
+
 git clone https://github.com/ShichaoMa/webWalker.git
 
 or
