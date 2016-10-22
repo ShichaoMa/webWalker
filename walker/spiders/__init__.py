@@ -68,6 +68,7 @@ class ClusterSpider(Spider, Logger):
     name = "cluster_spider"
     next_request_callback = next_request_callback
     proxy = None
+    change_proxy = None
     logger = LoggerDiscriptor()
 
     def __init__(self, *args, **kwargs):

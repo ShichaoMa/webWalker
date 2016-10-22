@@ -65,7 +65,8 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
     @process_requset_method_wrapper
     def process_request(self, request, spider):
 
-        self.user_agent = self.chicer.next() or self.default_agent
+        if not hasattr(self, "change_proxy") or spider.change_proxy:
+            self.user_agent = self.chicer.next() or self.default_agent
 
         if self.user_agent:
             request.headers.setdefault('User-Agent', self.user_agent)
@@ -130,8 +131,7 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
                     " in redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
                     request.url, reason, request.meta))
 
-            self.stats.set_failed_download(request.meta, reason)
-            raise IgnoreRequest("max redirections reached")
+            raise IgnoreRequest("max redirections reached:%s"%reason)
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -239,16 +239,19 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
                 self.logger.error("in retry request error %s" %traceback.format_exc())
 
             spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
-            raise IgnoreRequest("unhandle error")
+            raise IgnoreRequest("%s unhandle error. " % exception)
+
 
     def _retry(self, request, reason, spider):
 
         retries = request.meta.get('retry_times', 0) + 1
 
         if request.meta.get("if_next_page"):
+            spider.change_proxy = True
             self.logger.debug("in _retry re-yield next_pages request: %s" % request.url)
             return request.copy()
         elif retries <= self.max_retry_times:
+            spider.change_proxy = True
             retryreq = request.copy()
             retryreq.meta['retry_times'] = retries
             retryreq.dont_filter = True
@@ -266,9 +269,8 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             self.logger.error(
                 "in %s retry request error to failed pages url:%s, exception:%s, meta:%s" % (get_ip_address(),
                 request.url, reason, request.meta))
-            spider.crawler.stats.set_failed_download(request.meta, "%s %s" % (reason, "retry many times. "))
             self.logger.info("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
-            raise IgnoreRequest("max retry times")
+            raise IgnoreRequest("%s %s" % (reason, "retry many times. "))
 
 
 class ProxyMiddleware(Logger):
@@ -294,7 +296,12 @@ class ProxyMiddleware(Logger):
         else:
             return None
 
+    @process_requset_method_wrapper
     def process_request(self, request, spider):
+
+        if spider.change_proxy:
+            spider.proxy = None
+            spider.change_proxy = False
 
         if self.proxy_list:
             spider.proxy = spider.proxy or  self.choice()

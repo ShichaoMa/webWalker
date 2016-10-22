@@ -140,12 +140,11 @@ def process_requset_method_wrapper(func):
 
         try:
             return func(*args, **kwds)
-        except IgnoreRequest:
-            raise
-        except Exception:
+        except Exception, e:
             spider.logger.error("error heppened in process_request method of %s in %s. Error:%s, processing %s," % (
             self.__class__.__name__, IP, traceback.format_exc(), request.url))
-            spider.crawler.stats.set_failed_download(request.meta, traceback.format_exc())
+            spider.crawler.stats.set_failed_download(request.meta, str(e))
+            raise IgnoreRequest(e)
 
     return wrapper_method
 
@@ -162,12 +161,11 @@ def process_response_method_wrapper(func):
 
         try:
             return func(*args, **kwds)
-        except IgnoreRequest:
-            raise
-        except Exception:
+        except Exception, e:
             spider.logger.error("error heppened in process_response method of %s in %s. Error:%s, processing %s," % (
                 self.__class__.__name__, IP, traceback.format_exc(), response.url))
-            spider.crawler.stats.set_failed_download(request.meta, traceback.format_exc())
+            spider.crawler.stats.set_failed_download(request.meta, str(e))
+            raise IgnoreRequest(e)
 
     return wrapper_method
 
@@ -183,12 +181,13 @@ def process_exception_method_wrapper(func):
 
         try:
             return func(*args, **kwds)
-        except IgnoreRequest:
-            raise
-        except Exception:
+        except Exception, e:
             spider.logger.error("error heppened in process_exception method of %s in %s, deal with exception %s. Error:%s, processing %s," % (
                 self.__class__.__name__, IP, "%s:%s"%(exception.__class__.__name__, exception), traceback.format_exc(), request.url))
-            spider.crawler.stats.set_failed_download(request.meta, traceback.format_exc())
+
+            if isinstance(e, IgnoreRequest):
+                spider.crawler.stats.set_failed_download(request.meta, str(e))
+            raise IgnoreRequest(e)
 
     return wrapper_method
 
