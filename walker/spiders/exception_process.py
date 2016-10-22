@@ -6,7 +6,6 @@ from scrapy.exceptions import IgnoreRequest
 from scrapy.http import Request
 
 from utils import get_ip_address
-from constant.item_field import ITEM_FIELD
 
 
 IP = get_ip_address()
@@ -193,40 +192,3 @@ def process_exception_method_wrapper(func):
     return wrapper_method
 
 
-@parse_next_method_wrapper
-def next_request_callback(self, response):
-
-    k = response.meta.get("next_key")
-    type = response.meta.get("item_type")
-    filed_dict = ITEM_FIELD[self.name]
-    v = filter(lambda x:x, map(lambda x:x if x[0] == k else "", filed_dict["common"]+filed_dict[type]))[0][1]
-    self.logger.debug("start in parse %s ..." % k)
-    item = self.reset_item(response.meta['item_half'], type)
-    item[k] = self.get_val(v, response, item, is_after=True) or v.get("default", "")
-    self.logger.debug("crawlid:%s, sign_id %s, suceessfully yield item"%(item.get("crawlid"), item.get(SPIDER_SIGN[self.name], "unknow")))
-    self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
-
-    return item
-
-
-def send_request_wrapper(response, item, k, type):
-
-    def process_request(func):
-
-        def wrapper():
-            url = func(item, response)
-            response.meta['item_half'] = dict(item)
-            response.meta['next_key'] = k
-            response.meta['item_type'] = type
-
-            if url:
-                return Request(
-                        url=url,
-                        meta=response.meta,
-                        callback=next_request_callback,
-                        dont_filter=response.request.dont_filter
-                    )
-
-        return wrapper
-
-    return process_request

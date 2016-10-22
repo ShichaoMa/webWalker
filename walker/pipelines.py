@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-import json
 import os
+import time
 import math
-import traceback
+import json
+import shutil
 import openpyxl
+import traceback
 
 from urllib import quote
 from urllib2 import Request, urlopen
@@ -11,7 +13,7 @@ from urllib2 import Request, urlopen
 from scrapy import Item
 from scrapy.signals import spider_closed
 
-from spiders.constant import ITEM_FIELD
+from spiders import ITEM_FIELD
 from spiders.utils import Logger
 
 
@@ -36,10 +38,6 @@ class BasePipeline(Logger):
 
 class LoggingBeforePipeline(BasePipeline):
 
-    '''
-    Logs the crawl, currently the 1st priority of the pipeline
-    '''
-
     def __init__(self, settings):
         super(LoggingBeforePipeline, self).__init__(settings)
         self.logger.debug("Setup before pipeline")
@@ -55,14 +53,56 @@ class LoggingBeforePipeline(BasePipeline):
             return None
 
 
-class CoordinatePipeline(BasePipeline):
+class JSONPipeline(BasePipeline):
     '''
-       Logs the crawl for successfully pushing to Kafka
+       数据存储到json中
        '''
 
     def __init__(self, settings):
-        super(CoordinatePipeline, self).__init__(settings)
-        self.logger.debug("Setup file pipeline")
+        super(JSONPipeline, self).__init__(settings)
+        self.logger.debug("Setup json pipeline")
+        self.files = {}
+        self.setup()
+
+    def create(self, crawlid):
+        file_name = "task/%s_%s.json" % (self.crawler.spidercls.name, crawlid)
+        if os.path.exists(file_name):
+            shutil.copy(file_name, "%s.%s"%(file_name, time.strftime("%Y%m%d%H%M%S")))
+        fileobj = open(file_name, "w")
+        fileobj.write("[")
+        self.files[file_name] = fileobj
+        return fileobj
+
+    def setup(self):
+        if not os.path.exists("task"):
+            os.mkdir("task")
+
+    def process_item(self, item, spider):
+        self.logger.debug("Processing item in JSONPipeline")
+        if isinstance(item, spider.base_item_cls):
+            crawlid = item["crawlid"]
+            file_name = "task/%s_%s.json" % (spider.name, crawlid)
+            fileobj = self.files.get(file_name) or self.create(crawlid)
+            fileobj.write("%s\n,"%json.dumps(dict(item)))
+            item["success"] = True
+        return item
+
+    def spider_closed(self):
+        self.logger.info("close file...")
+        for fileobj in self.files.values():
+            fileobj.seek(-1, 1)
+            fileobj.write("]")
+            fileobj.close()
+
+
+class CoordinatePipeline(JSONPipeline):
+    '''
+       将抓取到的地址进一步转换成经纬度，并存储到json中
+    '''
+
+    def __init__(self, settings):
+        super(JSONPipeline, self).__init__(settings)
+        self.logger.debug("Setup coordinate pipeline")
         self.files = {}
         self.setup()
 
@@ -92,19 +132,8 @@ class CoordinatePipeline(BasePipeline):
             x, y = self.mercator2wgs84([content["x"] / 100, content["y"] / 100])
             return {"lng": x, "lat": y}
 
-    def create(self, crawlid):
-        file_name = "task/%s_%s.json" % (self.crawler.spidercls.name, crawlid)
-        fileobj = open(file_name, "w")
-        fileobj.write("[")
-        self.files[file_name] = fileobj
-        return fileobj
-
-    def setup(self):
-        if not os.path.exists("task"):
-            os.mkdir("task")
-
     def process_item(self, item, spider):
-        self.logger.debug("Processing item in FilePipeline")
+        self.logger.debug("Processing item in CoordinatePipeline")
         if isinstance(item, spider.base_item_cls):
             crawlid = item["crawlid"]
             adr = item["address"]
@@ -115,22 +144,15 @@ class CoordinatePipeline(BasePipeline):
             item["success"] = True
         return item
 
-    def spider_closed(self):
-        self.logger.info("close file...")
-        for fileobj in self.files.values():
-            fileobj.seek(-1, 1)
-            fileobj.write("]")
-            fileobj.close()
-
 
 class ExcelPipeline(BasePipeline):
     '''
-       Logs the crawl for successfully pushing to Kafka
-       '''
+      数据存储到excel中
+    '''
 
     def __init__(self, settings):
         super(ExcelPipeline, self).__init__(settings)
-        self.logger.debug("Setup file pipeline")
+        self.logger.debug("Setup excel pipeline")
         self.excels = {}
         self.title = None
         self.setup()
@@ -197,41 +219,7 @@ class ExcelPipeline(BasePipeline):
             meta[0].save(file_name)
 
 
-class JSONPipeline(BasePipeline):
-    '''
-       Logs the crawl for successfully pushing to Kafka
-       '''
-
-    def __init__(self, settings):
-        super(JSONPipeline, self).__init__(settings)
-        self.logger.debug("Setup file pipeline")
-        if not os.path.exists("task"):
-            os.mkdir("task")
-        self.fileobj = open("task/result.json", "w")
-        self.fileobj.write("[")
-
-    def process_item(self, item, spider):
-        self.logger.debug("Processing item in FilePipeline")
-        if isinstance(item, spider.base_item_cls):
-            self.fileobj.write("%s,\n"%json.dumps(dict(item)))
-            item["success"] = True
-        return item
-
-    def spider_closed(self):
-        self.logger.info("close file...")
-        try:
-            self.fileobj.seek(-2, 1)
-            self.fileobj.write("]")
-        except IOError:
-            pass
-        self.fileobj.close()
-
-
 class LoggingAfterPipeline(BasePipeline):
-
-    '''
-    Logs the crawl for successfully pushing to Kafka
-    '''
 
     def __init__(self, settings):
         super(LoggingAfterPipeline, self).__init__(settings)
@@ -240,10 +228,8 @@ class LoggingAfterPipeline(BasePipeline):
     def process_item(self, item, spider):
         self.logger.debug("Processing item in LoggingAfterPipeline")
         if isinstance(item, spider.base_item_cls):
-            # make duplicate item, but remove unneeded keys
             if item['success']:
-                self.logger.debug('Sent page to Kafka')
+                self.logger.debug('success')
             else:
-                self.logger.error('failed send to Kafka')
+                self.logger.error("error", item.get("exception"))
             return item
-

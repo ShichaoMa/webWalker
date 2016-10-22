@@ -1,20 +1,20 @@
 # -*- coding:utf-8 -*-
-import os
 import sys
 import argparse
 import traceback
-from log_to_kafka import Logger
 from tldextract import extract
 
-class RedisFeed(Logger):
+class RedisFeed:
 
-    def __init__(self, settings, crawlid, spiderid, url, priority):
+    def __init__(self, crawlid, spiderid, url, priority, port, host, custom):
         self.name = "redis_feed"
-        super(RedisFeed, self).__init__(settings)
         self.crawlid = crawlid
         self.spiderid = spiderid
         self.url = url
         self.priority = priority
+        self.port = port
+        self.host = host
+        self.custom = custom
         self.inc = 0
         self.extract = extract
         self.setup()
@@ -22,21 +22,22 @@ class RedisFeed(Logger):
     @classmethod
     def parse_args(cls):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--settings', type=str, default="settings.py")
+        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1")
+        parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379)
         parser.add_argument('-u', '--url', required=True, type=str)
         parser.add_argument('-c', '--crawlid', required=True, type=str)
         parser.add_argument('-s', '--spiderid', required=True, type=str)
         parser.add_argument('-p', '--priority', type=int, default=100)
+        parser.add_argument('--custom', action="store_true")
         return cls(**vars(parser.parse_args()))
 
     def setup(self):
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
-        if self.settings.get("CUSTOM_REDIS"):
+        if self.custom:
             from custom_redis.client import Redis
         else:
             from redis import Redis
-        self.redis_conn = Redis(host=self.settings.get("REDIS_HOST"),
-                           port=self.settings.get("REDIS_PORT"))
+        self.redis_conn = Redis(host=self.host, port=self.port)
         self.redis_conn.delete("crawlid:%s" % self.crawlid)
         self.redis_conn.delete("failed_pages:%s" % self.crawlid)
         self.redis_conn.delete("crawlid:%s:model" % self.crawlid)
@@ -63,7 +64,7 @@ class RedisFeed(Logger):
         print "\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(sucess_rate, failed_rate)
 
     def feed(self, queue_name, req):
-        if self.settings.get("CUSTOM_REDIS"):
+        if self.custom:
             from custom_redis.client.errors import RedisError
         else:
             from redis import RedisError
