@@ -9,7 +9,7 @@
 ## 以下技能最好掌握
 - python lambda 表达式的使用
 - python 简单函数编写
-- 了解scrapy的基本概念，参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
+- 了解scrapy的基本概念，参见[scrapy简单介绍](https://github.com/ShichaoMa/webWalker/wiki/scrapy-%E7%AE%80%E5%8D%95%E4%BB%8B%E7%BB%8D)
 
 # INSTALL
 ## ubuntu && windows
