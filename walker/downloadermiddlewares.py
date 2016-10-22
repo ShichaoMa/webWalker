@@ -23,6 +23,21 @@ from spiders.exception_process import process_exception_method_wrapper, \
 from spiders.utils import Logger, get_ip_address
 
 
+class DownloaderBaseMiddleware(Logger):
+
+    def __init__(self, settings):
+
+        self.set_logger(self.crawler)
+        self.settings = settings
+
+    @classmethod
+    def from_crawler(cls, crawler):
+
+        cls.crawler = crawler
+        obj = cls(crawler.settings)
+        return obj
+
+
 class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
     def __init__(self, settings, user_agent='Scrapy'):
@@ -273,21 +288,13 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             raise IgnoreRequest("%s %s" % (reason, "retry many times. "))
 
 
-class ProxyMiddleware(Logger):
+class ProxyMiddleware(DownloaderBaseMiddleware):
 
     def __init__(self, settings):
 
-        self.set_logger(self.crawler)
-        self.settings = settings
+        super(ProxyMiddleware, self).__init__(settings)
         proxy_list = settings.get("PROXY_LIST", "")
         self.proxy_list = filter(lambda x: x.strip() and not x.strip().startswith("#"), proxy_list.split('\n'))
-
-    @classmethod
-    def from_crawler(cls, crawler):
-
-        cls.crawler = crawler
-        obj = cls(crawler.settings)
-        return obj
 
     def choice(self):
 
@@ -311,8 +318,9 @@ class ProxyMiddleware(Logger):
             request.meta['proxy'] = proxy
             self.logger.debug("use proxy %s to send request"%proxy, extra={"rasp_proxy":proxy})
             # #Use the following lines if your proxy requires authentication
-            proxy_user_pass = "longen:jinanlongen2016"
+            proxy_user_pass = self.settings.get("PROXY_PASSWORD")
             # # setup basic authentication for the proxy
             # #encoded_user_pass = base64.encodestring(proxy_user_pass)
-            encoded_user_pass = base64.b64encode(proxy_user_pass)
-            request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass
+            if proxy_user_pass:
+                encoded_user_pass = base64.b64encode(proxy_user_pass)
+                request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass

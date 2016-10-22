@@ -257,7 +257,7 @@ class ClusterSpider(Spider, Logger):
             return False
         else:
             self.redis_conn.sadd("crawlid:%s:model" % crawlid, id)
-            self.redis_conn.expire("crawlid:%s:model" % crawlid, 1 * 60 * 60)
+            self.redis_conn.expire("crawlid:%s:model" % crawlid, self.crawler.settings.get("DUPLICATE_TIMEOUT", 60*60))
             return True
 
     def _enrich_base_data(self, response):

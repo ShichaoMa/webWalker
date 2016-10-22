@@ -22,6 +22,13 @@ CONCURRENT_REQUESTS_PER_IP = 4
 # 自带了一些user_agents，推荐不改
 USER_AGENT_LIST = pkgutil.get_data('walker', 'user_agents.list')
 
+# 对于有去重需求的分类链接，去重的超时时间，默认3600s
+# 如果该分类抓取完毕需要很长时间，中间还有可能关闭，那这个时间需要长一点
+DUPLICATE_TIMEOUT = 60*60
+
+# 代理密码，没有就可空
+PROXY_PASSWORD = ""
+
 # 重试次数
 RETRY_TIMES = 20
 
