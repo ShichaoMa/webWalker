@@ -6,6 +6,7 @@ import re
 import errno
 import socket
 import struct
+import psutil
 from cloghandler import ConcurrentRotatingFileHandler
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
@@ -16,23 +17,29 @@ from log_to_kafka import LogFactory, KafkaHandler
 class LoggerDiscriptor(object):
 
     def __init__(self, logger=None):
+
         self.logger = logger
 
     def __get__(self, instance, cls):
+
         if not self.logger:
             instance.set_logger()
+
         return self.logger
 
     def __set__(self, instance, value):
+
         self.logger = value
 
 
 class Logger(object):
 
     def set_logger(self, crawler):
+
         self.logger = LogFactory._instance or self.init_logger(crawler)
 
     def init_logger(self, crawler):
+
         my_level = crawler.settings.get('SC_LOG_LEVEL', 'INFO')
         my_name = "%s_%s" % (crawler.spidercls.name, get_ip_address())
         my_output = crawler.settings.get('SC_LOG_TYPE', "FILE")
@@ -42,22 +49,24 @@ class Logger(object):
         my_file = "%s_%s.log" % (crawler.spidercls.name, get_ip_address())
         my_backups = crawler.settings.get('SC_LOG_BACKUPS', 5)
         st = crawler.settings.get("SPIDER_REQ")
+
         if st:
             my_name += "_%s" % st
             my_file = my_file[:-4] + "_%s" % st + ".log"
         logger = LogFactory.get_instance(json=my_json,
                                               name=my_name,
                                               level=my_level)
+
         if my_output == "CONSOLE":
             logger.set_handler(logging.StreamHandler(sys.stdout))
         elif my_output == "KAFKA":
             logger.set_handler(KafkaHandler(crawler.settings))
         else:
-            # set up to file
+
             try:
-                # try to make dir
                 os.makedirs(my_dir)
             except OSError as exception:
+
                 if exception.errno != errno.EEXIST:
                     raise
 
@@ -65,10 +74,12 @@ class Logger(object):
                                                          maxBytes=my_bytes,
                                                          backupCount=my_backups)
             logger.set_handler(file_handler)
+
         return logger
 
 
 def _get_ip_address(ifname):
+
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     import fcntl
     return socket.inet_ntoa(fcntl.ioctl(
@@ -77,31 +88,58 @@ def _get_ip_address(ifname):
 
 
 def _get_net_interface():
+
     p = os.popen("ls /sys/class/net")
     buf = p.read(10000)
     return buf.strip(" \nlo")
 
 
+def get_netcard():
+
+    netcard_info = []
+    info = psutil.net_if_addrs()
+
+    for k,v in info.items():
+
+        for item in v:
+
+            if item[0] == 2 and not item[1]=='127.0.0.1':
+                netcard_info.append((k,item[1]))
+
+    return netcard_info
+
+
 def get_ip_address():
+
     if sys.platform == "win32":
         hostname = socket.gethostname()
         IPinfo = socket.gethostbyname_ex(hostname)
         r = IPinfo[2][2]
     else:
-        shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
-        try:
-            r = _get_ip_address(_get_net_interface())
-        except Exception:
-            try:
-                r = _get_ip_address('enp0s25')
-            except Exception:
-                try:
-                    r = _get_ip_address('enp0s8')
-                except Exception:
-                    try:
-                        r = _get_ip_address('ens32')
-                    except Exception:
-                        r = os.popen( shell_command ).read().strip()
+        ips = get_netcard()
+
+        if ips:
+            return ips[0][1]
+        else:
+            shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
+            os.popen(shell_command).read().strip()
+        #
+        # try:
+        #     r = _get_ip_address(_get_net_interface())
+        # except Exception:
+        #
+        #     try:
+        #         r = _get_ip_address('enp0s25')
+        #     except Exception:
+        #
+        #         try:
+        #             r = _get_ip_address('enp0s8')
+        #         except Exception:
+        #
+        #             try:
+        #                 r = _get_ip_address('ens32')
+        #             except Exception:
+        #                 r = os.popen( shell_command ).read().strip()
     return r
 
 

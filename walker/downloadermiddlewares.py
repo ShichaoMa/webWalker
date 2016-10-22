@@ -26,20 +26,24 @@ from spiders.utils import Logger, get_ip_address
 class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
     def __init__(self, settings, user_agent='Scrapy'):
+
         self.set_logger(self.crawler)
         super(CustomUserAgentMiddleware, self).__init__()
         user_agent_list = settings.get('USER_AGENT_LIST')
+
         if not user_agent_list:
             ua = settings.get('USER_AGENT', user_agent)
             self.user_agent_list = [ua]
         else:
             self.user_agent_list = map(lambda y: y.strip(), filter(lambda x: x.strip(), user_agent_list.split('\n')))
+
         self.default_agent = user_agent
         self.chicer = self.choice()
         self.user_agent = self.chicer.next() or user_agent
 
     @classmethod
     def from_crawler(cls, crawler):
+
         cls.crawler = crawler
         obj = cls(crawler.settings)
         crawler.signals.connect(obj.spider_opened,
@@ -47,17 +51,22 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
         return obj
 
     def choice(self):
-        # sequential selection;
+
         while True:
+
             if self.user_agent_list:
+
                 for user_agent in self.user_agent_list:
                     yield user_agent
+
             else:
                 yield None
 
     @process_requset_method_wrapper
     def process_request(self, request, spider):
+
         self.user_agent = self.chicer.next() or self.default_agent
+
         if self.user_agent:
             request.headers.setdefault('User-Agent', self.user_agent)
             self.logger.debug('User-Agent: {} {}'.format(request.headers.get('User-Agent'), request))
@@ -68,6 +77,7 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 class CustomRedirectMiddleware(RedirectMiddleware, Logger):
 
     def __init__(self, crawler):
+
         self.set_logger(crawler)
         super(CustomRedirectMiddleware, self).__init__(crawler.settings)
         self.stats = crawler.stats
@@ -75,10 +85,12 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
 
     @classmethod
     def from_crawler(cls, crawler):
+
         return cls(crawler)
 
     @process_response_method_wrapper
     def process_response(self, request, response, spider):
+
         if request.meta.get('dont_redirect', False):
             return response
 
@@ -95,8 +107,10 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
         return response
 
     def _redirect(self, redirected, request, spider, reason):
+
         reason = response_status_message(reason)
         redirects = request.meta.get('redirect_times', 0) + 1
+
         if redirects <= self.max_redirect_times:
             redirected.meta['redirect_times'] = redirects
             redirected.meta['redirect_urls'] = request.meta.get('redirect_urls', []) + \
@@ -108,23 +122,27 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
         else:
             self.logger.info("Discarding %s: max redirections reached" % request.url)
             request.meta["url"] = request.url
+
             if request.meta.get("callback") == "parse":
                 # 对于分类页失败，总数+1
                 self.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
                 self.logger.error(
                     " in redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
                     request.url, reason, request.meta))
+
             self.stats.set_failed_download(request.meta, reason)
             raise IgnoreRequest("max redirections reached")
 
     @classmethod
     def from_crawler(cls, crawler):
+
         return cls(crawler)
 
 
 class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
     def __init__(self, settings):
+
         self.settings = settings
         super(CustomCookiesMiddleware, self).__init__(settings.getbool('COOKIES_DEBUG'))
         self.current_cookies = {}
@@ -132,8 +150,10 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
     @classmethod
     def from_crawler(cls, crawler):
+
         if not crawler.settings.getbool('COOKIES_ENABLED'):
             raise NotConfigured
+
         cls.crawler = crawler
         return cls(crawler.settings)
 
@@ -149,9 +169,10 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         request.cookies.update(headers.get("Cookie", {}))
         cookies = self._get_request_cookies(jar, request)
         self.logger.debug("current cookies is %s" % cookies)
+
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
-        # set Cookie header
+
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
         headers.pop('Cookie', None)
@@ -164,8 +185,8 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
         if request.meta.get('dont_merge_cookies', False):
             return response
-        self._debug_set_cookie(response, spider)
 
+        self._debug_set_cookie(response, spider)
         cookiejarkey = request.meta.get("cookiejar", "default")
         jar = self.jars[cookiejarkey]
         jar.extract_cookies(response, request)
@@ -173,46 +194,57 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
 
 class CustomRetryMiddleware(RetryMiddleware, Logger):
+
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError, TypeError, ValueError)
 
     def __init__(self, settings):
+
         RetryMiddleware.__init__(self, settings)
         self.set_logger(self.crawler)
 
     @classmethod
     def from_crawler(cls, crawler):
+
         cls.crawler = crawler
         return cls(crawler.settings)
 
     @process_response_method_wrapper
     def process_response(self, request, response, spider):
+
         if request.meta.get('dont_retry', False):
             return response
+
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
             return self._retry(request, reason, spider) or response
+
         return response
 
     @process_exception_method_wrapper
     def process_exception(self, request, exception, spider):
+
         if isinstance(exception, self.EXCEPTIONS_TO_RETRY) \
                 and not request.meta.get('dont_retry', False):
             return self._retry(request, "%s:%s" % (exception.__class__.__name__, exception), spider)
 
         else:
             request.meta["url"] = request.url
+
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
                 self.logger.error(exception)
                 self.logger.error("in retry request error %s" %traceback.format_exc())
+
             spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
             raise IgnoreRequest("unhandle error")
 
     def _retry(self, request, reason, spider):
+
         retries = request.meta.get('retry_times', 0) + 1
+
         if request.meta.get("if_next_page"):
             self.logger.debug("in _retry re-yield next_pages request: %s" % request.url)
             return request.copy()
@@ -228,6 +260,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
 
         else:
             request.meta["url"] = request.url
+
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
             self.logger.error(
@@ -241,6 +274,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
 class ProxyMiddleware(Logger):
 
     def __init__(self, settings):
+
         self.set_logger(self.crawler)
         self.settings = settings
         proxy_list = settings.get("PROXY_LIST", "")
@@ -248,18 +282,18 @@ class ProxyMiddleware(Logger):
 
     @classmethod
     def from_crawler(cls, crawler):
+
         cls.crawler = crawler
         obj = cls(crawler.settings)
         return obj
 
-    # add by msc
     def choice(self):
+
         if self.proxy_list:
             return random.choice(self.proxy_list)
         else:
             return None
 
-    # overwrite process request
     def process_request(self, request, spider):
 
         if self.proxy_list:

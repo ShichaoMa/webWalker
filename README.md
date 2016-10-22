@@ -8,7 +8,7 @@
 ## 以下技能最好掌握
 - python lambda 表达式的使用
 - python 简单函数编写
-- 了解scrapy的基本概念，参见wiki
+- 了解scrapy的基本概念，参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
 
 # INSTALL
 ## ubuntu && windows
@@ -21,7 +21,7 @@ or
 ```
 
 # HELLOWORLD
-### 1 安装完毕后（推荐pip安装）使用scarpy生成一个项目
+### 1 安装完毕后（推荐pip安装）使用scrapy生成一个项目
 ```
 ubuntu@dev:~/myprojects$ scrapy startproject demo
 New Scrapy project 'demo' created in:
@@ -72,7 +72,7 @@ PAGE_XPATH = { # 配置网站分类页中获取下一页链接的方式，具体
 # item_xpath.py
 
 # -*- coding:utf-8 -*
-,4
+
 ITEM_XPATH = { # 配置网站分类页中获取商品页链接的方式，xpath表达式
     "bluefly": [
         '//ul[@class="mz-productlist-list mz-l-tiles"]/li//a[@class="mz-productlisting-title"]/@href',

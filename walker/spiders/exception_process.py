@@ -33,8 +33,7 @@ def parse_method_wrapper(func):
             return func(*args, **kwds)
         except Exception:
             self = args[0]
-            if hasattr(self, "change_proxy"):
-                self.change_proxy = True
+
             response = args[1]
             msg = "error heppened in %s method. Error:%s"%(func.__name__, traceback.format_exc())
             self.logger.info(msg)
@@ -91,8 +90,8 @@ def next_request_method_wrapper(self):
 def enqueue_method_wrapper(self):
 
     def wrapper(func):
-        @wraps(func)
 
+        @wraps(func)
         def wrapper_method(*args, **kwds):
 
             try:
@@ -110,6 +109,7 @@ def pipline_method_wrapper(func):
 
     @wraps(func)
     def wrapper_method(*args, **kwds):
+
         count = 0
         spider = args[2]
         item = args[1]
@@ -133,6 +133,7 @@ def process_requset_method_wrapper(func):
 
     @wraps(func)
     def wrapper_method(*args, **kwds):
+
         self = args[0]
         request = kwds.get("request")
         spider = kwds.get("spider")
@@ -153,6 +154,7 @@ def process_response_method_wrapper(func):
 
     @wraps(func)
     def wrapper_method(*args, **kwds):
+
         self = args[0]
         request = kwds.get("request")
         response = kwds.get("response")
@@ -166,7 +168,6 @@ def process_response_method_wrapper(func):
             spider.logger.error("error heppened in process_response method of %s in %s. Error:%s, processing %s," % (
                 self.__class__.__name__, IP, traceback.format_exc(), response.url))
             spider.crawler.stats.set_failed_download(request.meta, traceback.format_exc())
-            if hasattr(spider, "change_proxy"):spider.change_proxy=True
 
     return wrapper_method
 

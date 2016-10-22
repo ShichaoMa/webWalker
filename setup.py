@@ -7,7 +7,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '1.0.5'
+VERSION = '1.0.6'
 
 AUTHOR = "cn"
 
@@ -29,7 +29,7 @@ KEYWORDS = "crawl web spider scrapy"
 
 LICENSE = "MIT"
 
-PACKAGES = ["walker", "feed_monitor", "walker.spiders", "walker.spiders.constant"]
+PACKAGES = ["walker", "walker.spiders"]
 
 setup(
     name = NAME,
@@ -44,7 +44,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'feed = feed_monitor:main',
+            'feed = walker:main',
         ],
     },
     keywords = KEYWORDS,
@@ -53,7 +53,7 @@ setup(
     url = URL,
     license = LICENSE,
     packages = PACKAGES,
-    install_requires=["scrapy>=1.0.5", "log-to-kafka", "custom-redis", "openpyxl", "tldextract==2.0.1"],
+    install_requires=["scrapy>=1.0.5", "log-to-kafka", "custom-redis", "openpyxl", "tldextract==2.0.1", "psutil"],
     include_package_data=True,
     zip_safe=True,
 )

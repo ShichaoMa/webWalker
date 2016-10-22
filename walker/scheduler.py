@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
+import re
 import json
 import random
-import re
 
 import tldextract
 tldextract.tldextract.LOG.setLevel("INFO")
@@ -22,6 +22,7 @@ class Scheduler(Logger):
             from custom_redis.client import Redis
         else:
             from redis import Redis
+
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.get("REDIS_PORT"))
         self.queue_name = "%s:*:queue"
@@ -78,8 +79,7 @@ class Scheduler(Logger):
             queue = random.choice(queues)
             self.logger.info("length of queue %s is %s" %
                              (queue, self.redis_conn.zcard(queue)))
-            # 自定义redis可以使用此api
-            #
+
             if self.settings.get("CUSTOM_REDIS"):
                 item = self.redis_conn.zpop(queue)
             else:
