@@ -27,19 +27,18 @@ PAGE_XPATH = {}
 def next_request_callback(self, response):
 
     k = response.meta.get("next_key")
-    type = response.meta.get("item_type")
-    filed_dict = ITEM_FIELD[self.name]
-    v = filter(lambda x:x, map(lambda x:x if x[0] == k else "", filed_dict["common"]+filed_dict[type]))[0][1]
+    filed_list = ITEM_FIELD[self.name]
+    v = filter(lambda x:x, map(lambda x:x if x[0] == k else "", filed_list))[0][1]
     self.logger.debug("start in parse %s ..." % k)
-    item = self.reset_item(response.meta['item_half'], type)
+    item = self.reset_item(response.meta['item_half'])
     item[k] = self.get_val(v, response, item, is_after=True) or v.get("default", "")
-    self.logger.debug("crawlid:%s, sign_id %s, suceessfully yield item"%(item.get("crawlid"), item.get(SPIDER_SIGN[self.name], "unknow")))
+    self.logger.debug("crawlid:%s, product_id %s, suceessfully yield item"%(item.get("crawlid"), item.get("product_id", "unknow")))
     self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
 
     return item
 
 
-def send_request_wrapper(response, item, k, type):
+def send_request_wrapper(response, item, k):
 
     def process_request(func):
 
@@ -48,7 +47,6 @@ def send_request_wrapper(response, item, k, type):
             url = func(item, response)
             response.meta['item_half'] = dict(item)
             response.meta['next_key'] = k
-            response.meta['item_type'] = type
             response.meta["priority"] += 1
 
             if url:
