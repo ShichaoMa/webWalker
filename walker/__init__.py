@@ -1,7 +1,7 @@
 # -*- coding:utf-8 -*-
 
 
-VERSION = '1.0.10'
+VERSION = '1.1.0'
 
 AUTHOR = "cn"
 
@@ -10,6 +10,10 @@ AUTHOR_EMAIL = "308299269@qq.com"
 URL = "https://www.github.com/ShichaoMa/webWalker"
 
 from redis_feed import RedisFeed
+from check_status import main
 
-def main():
+def check():
+    main()
+
+def feed():
     RedisFeed.parse_args().start()

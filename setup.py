@@ -7,7 +7,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '1.0.10'
+VERSION = '1.1.0'
 
 AUTHOR = "cn"
 
@@ -44,7 +44,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'feed = walker:main',
+            'feed = walker:feed',
+            'check = walker:check',
         ],
     },
     keywords = KEYWORDS,

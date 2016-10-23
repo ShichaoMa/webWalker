@@ -78,6 +78,16 @@ class Logger(object):
         return logger
 
 
+def parse_cookie(string):
+    results = re.findall('([^=]+)=([^\;]+);?\s?', string)
+    my_dict = {}
+
+    for item in results:
+        my_dict[item[0]] = item[1]
+
+    return my_dict
+
+
 def _get_ip_address(ifname):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

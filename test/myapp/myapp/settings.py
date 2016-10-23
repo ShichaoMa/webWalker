@@ -43,7 +43,7 @@ REDIRECT_PRIORITY_ADJUST = -1
 
 # 日志配置
 SC_LOG_LEVEL = 'DEBUG'
-SC_LOG_TYPE = "FILE"
+SC_LOG_TYPE = "CONSOLE"
 SC_LOG_JSON = False
 SC_LOG_DIR = "logs"
 SC_LOG_MAX_BYTES = '10MB'
@@ -54,26 +54,10 @@ TOPIC = "log.incoming"
 
 # 有些网站可能需要提供一些自定义的请求头
 HEADERS = {
-    # "ashford": {
-    #             "Cookie": {"userPrefLanguage": "zh_CN"},
-    #             "Host": "www.ashford.com",
-    #             },
-    # "onlineshoes": {
-    #             "Cookie": {
-    #                 "OLS": "cur=USD&sc=US&iwmh=CN%7cUS",
-    #                 "path": "/"
-    #             },
-    #             "Host": "www.onlineshoes.com",
-    #             },
-    # "jomashop": {
-    #             "Cookie": {"D_SID": "23.83.236.209:UrJdaeCr0OXNj8YS4rPJGGgSy06q86mWo2sbfA1lbrg",
-    #                        "D_PID": "3119DF0B-3C06-308A-88B4-6118E4B86D16",
-    #                        "D_IID": "939D1695-634B-356A-B981-8ACEE26C1FC4",
-    #                        "D_UID": "F1FBDFB9-DEF1-32D4-8299-4F784475575A",
-    #                        "D_HID": "TgwvBOECiSZjP2tULaaRUypFxBrZ0rmSTEeGsHUfx4A",
-    #                        "D_ZID": "BD763E80-80C7-3BE6-8945-E553C4FB1029"
-    #                        },
-    #             }
+    "ashford": {
+                "Cookie": "userPrefLanguage=en_US;",
+                "Host": "www.ashford.com",
+                },
 }
 
 

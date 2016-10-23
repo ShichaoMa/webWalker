@@ -20,7 +20,7 @@ from twisted.internet.error import TimeoutError, DNSLookupError, \
 
 from spiders.exception_process import process_exception_method_wrapper, \
     process_requset_method_wrapper, process_response_method_wrapper
-from spiders.utils import Logger, get_ip_address
+from spiders.utils import Logger, get_ip_address, parse_cookie
 
 
 class DownloaderBaseMiddleware(Logger):
@@ -178,12 +178,11 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         if 'dont_merge_cookies' in request.meta:
             return
 
-        headers = self.settings.get("HEADERS", {}).get(spider.name, {})
+        headers = self.settings.get("HEADERS", {}).get(spider.name, {}).copy()
         cookiejarkey = request.meta.get("cookiejar", "default")
         jar = self.jars[cookiejarkey]
-        request.cookies.update(headers.get("Cookie", {}))
+        request.cookies.update(parse_cookie(headers.get("Cookie", "")))
         cookies = self._get_request_cookies(jar, request)
-        self.logger.debug("current cookies is %s" % cookies)
 
         for cookie in cookies:
             jar.set_cookie_if_ok(cookie, request)
@@ -192,7 +191,7 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         jar.add_cookie_header(request)
         headers.pop('Cookie', None)
         request.headers.update(headers)
-
+        self.logger.debug("current cookies is %s" % cookies)
         self._debug_cookie(request, spider)
 
     @process_response_method_wrapper

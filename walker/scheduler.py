@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-import re
 import json
 import random
 
@@ -8,7 +7,7 @@ tldextract.tldextract.LOG.setLevel("INFO")
 
 from scrapy.http.request import Request
 
-from walker.spiders.utils import Logger
+from walker.spiders.utils import Logger, parse_cookie
 
 
 class Scheduler(Logger):
@@ -129,18 +128,9 @@ class Scheduler(Logger):
                     if isinstance(item['cookie'], dict):
                         req.cookies = item['cookie']
                     elif isinstance(item['cookie'], basestring):
-                        req.cookies = self.parse_cookie(item['cookie'])
+                        req.cookies = parse_cookie(item['cookie'])
                 return req
 
-    def parse_cookie(self, string):
-
-        results = re.findall('([^=]+)=([^\;]+);?\s?', string)
-        my_dict = {}
-
-        for item in results:
-            my_dict[item[0]] = item[1]
-
-        return my_dict
 
     def close(self, reason):
 
