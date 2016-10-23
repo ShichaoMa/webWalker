@@ -40,6 +40,28 @@ class BasePipeline(Logger):
             self.fileobj.close()
 
 
+class ItemSkipPipeline(BasePipeline):
+
+    '''
+    Logs the crawl, currently the 1st priority of the pipeline
+    '''
+
+    def __init__(self, settings):
+        super(ItemSkipPipeline, self).__init__(settings)
+        self.logger.debug("Setup itemskip pipeline")
+
+
+    def process_item(self, item, spider):
+        self.logger.debug("Processing item in ItemSkipPipeline")
+        if isinstance(item, spider.base_item_cls):
+            self.logger.debug('skip item field')
+            for v in ITEM_FIELD[spider.name]:
+                if v[1].get("skip"):
+                    del item[v[0]]
+                    self.logger.debug("skip item field %s"%v[0])
+            return item
+
+
 class LoggingBeforePipeline(BasePipeline):
 
     def __init__(self, settings):
