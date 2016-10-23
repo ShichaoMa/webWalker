@@ -6,12 +6,13 @@ from tldextract import extract
 
 class RedisFeed:
 
-    def __init__(self, crawlid, spiderid, url, priority, port, host, custom):
+    def __init__(self, crawlid, spiderid, url, urls_file, priority, port, host, custom):
 
         self.name = "redis_feed"
         self.crawlid = crawlid
         self.spiderid = spiderid
         self.url = url
+        self.urls_file = urls_file
         self.priority = priority
         self.port = port
         self.host = host
@@ -26,7 +27,8 @@ class RedisFeed:
         parser = argparse.ArgumentParser()
         parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1")
         parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379)
-        parser.add_argument('-u', '--url', required=True, type=str)
+        parser.add_argument('-u', '--url', type=str)
+        parser.add_argument('-uf', '--urls-file', type=str)
         parser.add_argument('-c', '--crawlid', required=True, type=str)
         parser.add_argument('-s', '--spiderid', required=True, type=str)
         parser.add_argument('-p', '--priority', type=int, default=100)
@@ -48,28 +50,44 @@ class RedisFeed:
         self.redis_conn.delete("crawlid:%s:model" % self.crawlid)
 
     def start(self):
-
-        url_list = self.url.split("     ")
-        lines_count = len(url_list)
         sucess_rate, failed_rate = 0, 0
+        # item抓取
+        if self.urls_file:
+            with open(self.urls_file) as f:
+                lst = f.readlines()
+                lines_count = len(lst)
+                for index, url in enumerate(lst):
+                    json_req = '{"url":"%s","crawlid":"%s","spiderid":"%s","callback":"parse_item", "priority":%s}' % (
+                        url.strip("\357\273\277\r\n"),
+                        self.crawlid,
+                        self.spiderid,
+                        self.priority
+                    )
+                    self.failed_count += self.feed(self.get_name(url), json_req)
+                    sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
+                self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
+        # 分类抓取
+        else:
+            url_list = self.url.split("     ")
+            lines_count = len(url_list)
 
-        for index, url in enumerate(url_list):
-            json_req = '{"url":"%s","crawlid":"%s","spiderid":"%s","callback":"parse","priority":%s}' % (
-                url.strip(),
-                self.crawlid,
-                self.spiderid,
-                self.priority,
-            )
-            ex_res = self.extract(url)
-            queue_name = "{sid}:{dom}.{suf}:queue".format(
-                sid=self.spiderid,
-                dom=ex_res.domain,
-                suf=ex_res.suffix)
-            self.failed_count += self.feed(queue_name, json_req)
-            sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
-
-        self.redis_conn.hset("crawlid:%s" % self.crawlid, "type", "get")
+            for index, url in enumerate(url_list):
+                json_req = '{"url":"%s","crawlid":"%s","spiderid":"%s","callback":"parse","priority":%s}' % (
+                    url.strip(),
+                    self.crawlid,
+                    self.spiderid,
+                    self.priority,
+                )
+                self.failed_count += self.feed(self.get_name(url), json_req)
+                sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
         print "\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(sucess_rate, failed_rate)
+
+    def get_name(self, url):
+        ex_res = self.extract(url)
+        return "{sid}:{dom}.{suf}:queue".format(
+            sid=self.spiderid,
+            dom=ex_res.domain,
+            suf=ex_res.suffix)
 
     def feed(self, queue_name, req):
 

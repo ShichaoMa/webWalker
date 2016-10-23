@@ -124,7 +124,10 @@ scrapy crawl bluefly
 ### 7 投放任务
 ```
 # 使用自带的costom-redis 需要加上 --custom
+# 投放分类链接
 feed -c test_01 -s bluefly -u "http://www.bluefly.com/assortment/the-boot-shop-overarching/women/shoes" --custom
+# 投放项目链接，支持多个项目链接一起投放，把每个链接按行放到一个文件中即可
+feed -c test_04 -s ashford -uf item.txt --custom
 ```
 ### 8 查看任务状态
 ```
