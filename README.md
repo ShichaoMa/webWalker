@@ -129,7 +129,7 @@ feed -c test_01 -s bluefly -u "http://www.bluefly.com/assortment/the-boot-shop-o
 ### 8 查看任务状态
 ```
 # 使用自带的costom-redis 需要加上 --custom
-check test_01
+check test_01 --custom
 ```
 # DECUMENT
 参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
