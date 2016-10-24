@@ -17,6 +17,7 @@
 需要python2.7
 
 git clone https://github.com/ShichaoMa/webWalker.git
+cd webWalker/walker && (sudo) python setup.py install
 
 or
 
