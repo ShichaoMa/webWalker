@@ -17,7 +17,7 @@ from utils import get_ip_address, url_arg_increment, Logger, \
 from helper import function_xpath_common, function_re_common
 
 
-BASE_FIELD = ["success", "domain", "exception", "crawlid", "meta", "response_url", "status_code", "status_msg", "url", "seed"]
+BASE_FIELD = ["success", "domain", "exception", "crawlid", "spiderid", "workerid", "response_url", "status_code", "status_msg", "url", "seed"]
 ITEM_FIELD = {}
 ITEM_XPATH = {}
 PAGE_XPATH = {}
@@ -259,28 +259,23 @@ class ClusterSpider(Spider, Logger):
             return True
 
     def _enrich_base_data(self, response):
-        meta = response.meta
         item = self.get_item_cls()()
+        if 'workers' not in response.meta:
+            response.meta['workers'] = {}
 
-        if 'workers' not in meta:
-            meta['workers'] = {}
-
-        if self.worker_id not in meta['workers']:
-            meta['workers'][self.worker_id] = 1
+        if self.worker_id not in response.meta['workers']:
+            response.meta['workers'][self.worker_id] = 1
         else:
-            meta['workers'][self.worker_id] += 1
+            response.meta['workers'][self.worker_id] += 1
 
-        item['meta'] = {
-            'spiderid': meta['spiderid'],
-            "url": response.meta["url"],
-            'workers': meta['workers'],
-        }
+        item['spiderid'] = response.meta['spiderid']
+        item['workerid'] = response.meta['workers']
         item['url'] = response.meta["url"]
         item["seed"] = response.meta.get("seed", "")
         item['status_code'] = response.status
         item["status_msg"] = response_status_message(response.status)
         item['domain'] = urlparse(response.url).hostname.split(".", 1)[1]
-        item['crawlid'] = meta['crawlid']
+        item['crawlid'] = response.meta['crawlid']
         item['response_url'] = response.url
         return item
 
