@@ -46,8 +46,8 @@ class StatsCollector(MemoryStatsCollector):
 
     @stats_wrapper
     def set_failed(self, meta, reason, _type="pages"):
-        self.redis_conn.hset("failed_%s:%s" % (_type, meta.get('crawlid')), meta.get('url'), reason)
-        self.redis_conn.expire("failed_%s:%s" % (_type, meta.get('crawlid')), 60 * 60 * 24 * 2)
+        self.redis_conn.hset("failed_download_%s:%s" % (_type, meta.get('crawlid')), meta.get('url'), reason)
+        self.redis_conn.expire("failed_download_%s:%s" % (_type, meta.get('crawlid')), 60 * 60 * 24 * 2)
 
     @stats_wrapper
     def inc_total_pages(self, crawlid, num=1):

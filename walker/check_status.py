@@ -1,13 +1,16 @@
 # -*- coding:utf-8 -*-
+import fnmatch
 import argparse
+
 
 def format(d, f=False):
     for k, v in d.items():
         if f:
-            print("reason --> %s"%v.ljust(22))
-            print("url    --> %s"%k.ljust(22))
+            print("reason --> %s"%v.ljust(30))
+            print("url    --> %s"%k.ljust(30))
         else:
-            print("%s -->  %s"%(k.ljust(22), v))
+            print("%s -->  %s"%(k.ljust(30), v))
+
 
 def start(crawlid, host, custom):
     if custom:
@@ -17,12 +20,13 @@ def start(crawlid, host, custom):
 
     redis_conn = Redis(host)
     key = "crawlid:%s"%crawlid
-    failed_pages = int(redis_conn.hget(key, "failed_download_pages") or 0)
-    format(redis_conn.hgetall(key))
-    if failed_pages :
-        print_if = raw_input("show the failed pages? y/n default n:")
+    data = redis_conn.hgetall(key)
+    failed_keys = filter(lambda x: fnmatch.fnmatch(x, "failed_download_*"), data.keys())
+    format(data)
+    for fk in failed_keys:
+        print_if = raw_input("show the %s? y/n default n:"%fk.replace("_", " "))
         if print_if == "y":
-            key_ = "failed_pages:%s" % crawlid
+            key_ = "%s:%s" % (fk, crawlid)
             p = redis_conn.hgetall(key_)
             format(p, True)
 
@@ -33,7 +37,7 @@ def main():
     parser.add_argument("-p", "--port", default="6379", help="redis port")
     parser.add_argument("crawlids", nargs="+", help="crawlids")
     parser.add_argument("--custom", action="store_true", default=False)
-    args = parser.parse_args();
+    args = parser.parse_args()
     for crawlid in args.crawlids:
         start(crawlid=crawlid, host=args.host, custom=args.custom)
 

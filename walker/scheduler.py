@@ -53,7 +53,6 @@ class Scheduler(Logger):
             'cookies': request.cookies,
             'meta': request.meta,
             '_encoding': request._encoding,
-            'priority': request.priority,
             'dont_filter': request.dont_filter,
             'callback': None if request.callback is None else request.callback.func_name,
             'errback': None if request.errback is None else request.errback.func_name,
@@ -69,7 +68,7 @@ class Scheduler(Logger):
             sid=req_dict['meta']['spiderid'],
             dom=ex_res.domain,
             suf=ex_res.suffix)
-        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["priority"]))
+        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["meta"]["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
