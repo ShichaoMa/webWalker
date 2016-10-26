@@ -249,9 +249,9 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
 
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
-                self.logger.error(exception)
-                self.logger.error("in retry request error %s" %traceback.format_exc())
 
+            self.logger.error(exception)
+            self.logger.error("in retry request error %s" %traceback.format_exc())
             spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
             raise IgnoreRequest("%s unhandle error. " % exception)
 

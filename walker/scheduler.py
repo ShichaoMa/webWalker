@@ -8,9 +8,12 @@ tldextract.tldextract.LOG.setLevel("INFO")
 from scrapy.http.request import Request
 
 from walker.spiders.utils import Logger, parse_cookie
+from walker.spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
 
 
 class Scheduler(Logger):
+    # 记录当前正在处理的item, 在处理异常时使用
+    present_item = None
 
     def __init__(self, crawler):
 
@@ -57,6 +60,7 @@ class Scheduler(Logger):
         }
         return req_dict
 
+    @enqueue_request_method_wrapper
     def enqueue_request(self, request):
 
         req_dict = self.request_to_dict(request)
@@ -70,6 +74,7 @@ class Scheduler(Logger):
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
 
+    @next_request_method_wrapper
     def next_request(self):
 
         queues = self.redis_conn.keys(self.queue_name)
@@ -90,7 +95,7 @@ class Scheduler(Logger):
 
             if item:
                 item = json.loads(item)
-
+                self.present_item = item
                 try:
                     req = Request(item['url'])
                 except ValueError:

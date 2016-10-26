@@ -36,7 +36,7 @@ def parse_method_wrapper(func):
 
             response = args[1]
             msg = "error heppened in %s method. Error:%s"%(func.__name__, traceback.format_exc())
-            self.logger.info(msg)
+            self.logger.error(msg)
             self.crawler.stats.set_failed_download(response.meta, "%s \n heppened in %s of %s"%(traceback.format_exc(), func.__name__, IP))
 
     return wrapper_method
@@ -54,7 +54,7 @@ def parse_next_method_wrapper(func):
             return func(*args, **kwds)
         except Exception:
             msg = "error heppened in %s method. Error:%s"%(func.__name__, traceback.format_exc())
-            self.logger.info(msg)
+            self.logger.error(msg)
             item = response.meta.get("item_half", {})
             self.crawler.stats.set_failed_download(
                 response.meta, "%s \n heppened in %s of %s product_id: %s," %
@@ -64,67 +64,44 @@ def parse_next_method_wrapper(func):
     return wrapper_method
 
 
-def next_request_method_wrapper(self):
-
-    def wrapper(func):
-        @wraps(func)
-
-        def wrapper_method(*args, **kwds):
-
-            try:
-                return func(*args, **kwds)
-            except Exception:
-                msg = "error heppened in %s method. Error:%s"%(func.__name__, traceback.format_exc())
-                self.logger.info(msg)
-
-                if self.present_item:
-                    self.spider.crawler.stats.set_failed_download(
-                        self.present_item if not isinstance(self.present_item, Request) else self.present_item["meta"],
-                        "%s \n heppened in %s of %s"%(traceback.format_exc(), func.__name__, IP))
-
-        return wrapper_method
-
-    return wrapper
-
-
-def enqueue_method_wrapper(self):
-
-    def wrapper(func):
-
-        @wraps(func)
-        def wrapper_method(*args, **kwds):
-
-            try:
-                return func(*args, **kwds)
-            except Exception:
-                msg = "error heppened in %s method of %s. Error:%s"%(func.__name__, IP, traceback.format_exc())
-                self.logger.info(msg)
-
-        return wrapper_method
-
-    return wrapper
-
-
-def pipline_method_wrapper(func):
-
+def next_request_method_wrapper(func):
     @wraps(func)
     def wrapper_method(*args, **kwds):
+        try:
+            return func(*args, **kwds)
+        except Exception:
+            self = args[0]
+            msg = "error heppened in %s method. Error:%s" % (func.__name__, traceback.format_exc())
+            self.logger.error(msg)
 
-        count = 0
-        spider = args[2]
-        item = args[1]
+            if self.present_item:
+                meta = self.present_item["meta"] if self.present_item.get("meta") else self.present_item
+            else:
+                meta = {"crawlid": "next_request_unknow", "url": "unknow"}
 
-        while count < 3:
+            if meta.get("callback") == "parse":
+                self.spider.crawler.stats.inc_total_pages(crawlid=meta['crawlid'])
 
-            try:
-                return func(*args, **kwds)
-            except Exception:
-                spider.log("error heppened in %s method of %s. Error:%s, processing %s,"%(func.__name__, IP, traceback.format_exc(), str(item)))
-                continue
+            self.spider.crawler.stats.set_failed_download(meta, "%s \n heppened in %s of %s" % (
+            traceback.format_exc(), func.__name__, IP))
 
-        spider.crawler.stats.set_failed_download(item.meta, traceback.format_exc())
+    return wrapper_method
 
-        return item
+
+def enqueue_request_method_wrapper(func):
+    @wraps(func)
+    def wrapper_method(*args, **kwds):
+        try:
+            return func(*args, **kwds)
+        except Exception:
+            self = args[0]
+            request = args[1]
+            if request.meta.get("callback") == "parse":
+                self.spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
+            msg = "error heppened in %s method of %s. Error:%s"%(func.__name__, IP, traceback.format_exc())
+            self.spider.crawler.stats.set_failed_download(request.meta, "%s \n heppened in %s of %s" % (
+                traceback.format_exc(), func.__name__, IP))
+            self.logger.error(msg)
 
     return wrapper_method
 

@@ -1,3 +1,4 @@
+# -*- coding:utf-8 -*-
 import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -72,8 +73,7 @@ class ClusterSpider(Spider, Logger):
     def __init__(self, *args, **kwargs):
 
         Spider.__init__(self, *args, **kwargs)
-        self.worker_id = "%s_%s" % (socket.gethostname(), get_ip_address())
-        self.worker_id = self.worker_id.replace('.', '-')
+        self.worker_id = ("%s_%s" % (socket.gethostname(), get_ip_address())).replace('.', '_')
         self.gen_field = self._yield_field()
         self.base_item_cls = type("RawResponseItem", (Item, ),
                                   dict(zip(BASE_FIELD, self.gen_field)))
@@ -189,11 +189,8 @@ class ClusterSpider(Spider, Logger):
         else:
             response.meta["seed"] = response.url
 
-        workers = response.meta.get('workers', {})
-
-        for worker in workers.keys():
-            workers[worker] = 0
-
+        # 防止代理继承  add at 16.10.26
+        response.meta.pop("proxy", None)
         response.meta["callback"] = "parse_item"
         response.meta["priority"] -= 20
 
@@ -260,16 +257,8 @@ class ClusterSpider(Spider, Logger):
 
     def _enrich_base_data(self, response):
         item = self.get_item_cls()()
-        if 'workers' not in response.meta:
-            response.meta['workers'] = {}
-
-        if self.worker_id not in response.meta['workers']:
-            response.meta['workers'][self.worker_id] = 1
-        else:
-            response.meta['workers'][self.worker_id] += 1
-
         item['spiderid'] = response.meta['spiderid']
-        item['workerid'] = response.meta['workers']
+        item['workerid'] = self.worker_id
         item['url'] = response.meta["url"]
         item["seed"] = response.meta.get("seed", "")
         item['status_code'] = response.status

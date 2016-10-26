@@ -38,27 +38,6 @@ class StatsCollector(MemoryStatsCollector):
         self.redis_conn.expire("crawlid:%s" % crawlid, 60 * 60 * 24 * 2)
 
     @stats_wrapper
-    def inc_invalidate_property_value(self, crawlid, url, reason):
-
-        self.redis_conn.hincrby("crawlid:%s" % crawlid, "invalidate_pages", 1)
-        self.update(crawlid)
-        self.set_invalidate_property_pages(crawlid, url, reason)
-
-    @stats_wrapper
-    def set_invalidate_property_pages(self, crawlid, url, reason):
-
-        self.redis_conn.hset("invalidate_pages:%s" % crawlid, url, reason)
-        self.redis_conn.expire("invalidate_pages:%s" % crawlid, 60 * 60 * 24 * 2)
-
-    @stats_wrapper
-    def inc_pipline_failed_items(self, item, reason):
-
-        self.update(item["crawlid"], item["meta"])
-        self.redis_conn.hincrby("crawlid:%s" % item["crawlid"], "pipline_failed_items", 1)
-        item['meta']['crawlid'] = item["crawlid"]
-        self.set_failed(item['meta'], reason)
-
-    @stats_wrapper
     def set_failed_download(self, meta, reason, _type="pages"):
 
         self.redis_conn.hincrby("crawlid:%s" % meta.get('crawlid'), "failed_download_%s"%_type, 1)
@@ -67,7 +46,6 @@ class StatsCollector(MemoryStatsCollector):
 
     @stats_wrapper
     def set_failed(self, meta, reason, _type="pages"):
-
         self.redis_conn.hset("failed_%s:%s" % (_type, meta.get('crawlid')), meta.get('url'), reason)
         self.redis_conn.expire("failed_%s:%s" % (_type, meta.get('crawlid')), 60 * 60 * 24 * 2)
 
@@ -89,10 +67,6 @@ class StatsCollector(MemoryStatsCollector):
 
         self.redis_conn.hincrby("crawlid:%s" % crawlid, "crawled_pages", 1)
         self.update(crawlid)
-        self.inc_crawled_pages_one_worker(crawlid=crawlid, workerid=self.crawler.spider.worker_id)
-
-    @stats_wrapper
-    def inc_crawled_pages_one_worker(self, crawlid, workerid):
-
+        workerid=self.crawler.spider.worker_id
         self.redis_conn.hincrby("crawlid:%s:workerid:%s" % (crawlid, workerid), "crawled_pages", 1)
         self.redis_conn.expire("crawlid:%s:workerid:%s" % (crawlid, workerid), 60 * 60 * 24 * 2)

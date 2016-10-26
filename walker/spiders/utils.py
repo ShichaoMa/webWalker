@@ -105,17 +105,12 @@ def _get_net_interface():
 
 
 def get_netcard():
-
     netcard_info = []
     info = psutil.net_if_addrs()
-
     for k,v in info.items():
-
         for item in v:
-
             if item[0] == 2 and not item[1]=='127.0.0.1':
                 netcard_info.append((k,item[1]))
-
     return netcard_info
 
 
@@ -124,7 +119,7 @@ def get_ip_address():
     if sys.platform == "win32":
         hostname = socket.gethostname()
         IPinfo = socket.gethostbyname_ex(hostname)
-        r = IPinfo[2][2]
+        return IPinfo[2][2]
     else:
         ips = get_netcard()
 
@@ -132,25 +127,7 @@ def get_ip_address():
             return ips[0][1]
         else:
             shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
-            os.popen(shell_command).read().strip()
-        #
-        # try:
-        #     r = _get_ip_address(_get_net_interface())
-        # except Exception:
-        #
-        #     try:
-        #         r = _get_ip_address('enp0s25')
-        #     except Exception:
-        #
-        #         try:
-        #             r = _get_ip_address('enp0s8')
-        #         except Exception:
-        #
-        #             try:
-        #                 r = _get_ip_address('ens32')
-        #             except Exception:
-        #                 r = os.popen( shell_command ).read().strip()
-    return r
+            return os.popen(shell_command).read().strip()
 
 
 def url_arg_increment(arg_pattern, url):
