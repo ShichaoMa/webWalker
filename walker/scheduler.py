@@ -133,6 +133,7 @@ class Scheduler(Logger):
                         req.cookies = item['cookie']
                     elif isinstance(item['cookie'], basestring):
                         req.cookies = parse_cookie(item['cookie'])
+
                 return req
 
 

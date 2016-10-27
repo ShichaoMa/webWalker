@@ -35,8 +35,8 @@ def main():
     parser = argparse.ArgumentParser(description="usage: %prog [options]")
     parser.add_argument("--host", default="127.0.0.1", help="redis host")
     parser.add_argument("-p", "--port", default="6379", help="redis port")
-    parser.add_argument("crawlids", nargs="+", help="crawlids")
-    parser.add_argument("--custom", action="store_true", default=False)
+    parser.add_argument("crawlids", nargs="+", help="Crawlids to check. ")
+    parser.add_argument("--custom", action="store_true", default=False, help="Use the custom redis whether or not. ")
     args = parser.parse_args()
     for crawlid in args.crawlids:
         start(crawlid=crawlid, host=args.host, custom=args.custom)

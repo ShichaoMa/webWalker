@@ -48,7 +48,6 @@ SC_LOG_JSON = False
 SC_LOG_DIR = "logs"
 SC_LOG_MAX_BYTES = '10MB'
 SC_LOG_BACKUPS = 5
-TO_KAFKA = False
 KAFKA_HOSTS = '192.168.200.58:9092'
 TOPIC = "log.incoming"
 
@@ -56,7 +55,6 @@ TOPIC = "log.incoming"
 HEADERS = {
     "ashford": {
                 "Cookie": "userPrefLanguage=en_US;",
-                "Host": "www.ashford.com",
                 },
 }
 
@@ -80,6 +78,7 @@ STATS_CLASS = 'walker.stats_collectors.StatsCollector'
 # Store scraped item in redis for post-processing.
 ITEM_PIPELINES = {
     'walker.pipelines.JSONPipeline': 100,
+    'walker.pipelines.ItemSkipPipeline': 99,
     'walker.pipelines.LoggingBeforePipeline': 1,
     'walker.pipelines.LoggingAfterPipeline': 101,
 }

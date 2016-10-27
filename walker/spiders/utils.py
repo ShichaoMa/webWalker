@@ -7,10 +7,13 @@ import errno
 import socket
 import struct
 import psutil
+
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
+
+from helper import function_xpath_common, function_re_common
 
 
 class LoggerDiscriptor(object):
@@ -223,3 +226,40 @@ def repl_wrapper(path, page_num):
             return path + sub_path
     return _repl
 
+
+def get_val(sel_meta, response, item=None, is_after=False):
+    sel = response.selector if hasattr(response, "selector") else response
+    val = ""
+    expression_list = ["re", "xpath", "css"]
+    while not val:
+        try:
+            selector = expression_list.pop(0)
+        except IndexError:
+            break
+
+        expressions = sel_meta.get(selector)
+        if expressions:
+            for expression in expressions:
+                try:
+                    val_ = getattr(sel, selector)(expression)
+                    function = sel_meta.get("function") or globals()["function_%s_common" % selector]
+                    if is_after:
+                        function = sel_meta.get("function_after") or function
+                    val = function(val_, item)
+
+                except Exception:
+                    print ">>>>", expression
+                    raise
+
+                if val:
+                    break
+
+    if not val:
+        extract = sel_meta.get("extract")
+
+        if is_after:
+            extract = sel_meta.get("extract_after") or extract
+        if extract:
+            val = extract(item, response)
+
+    return val

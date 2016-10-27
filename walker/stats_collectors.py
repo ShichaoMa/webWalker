@@ -11,18 +11,14 @@ class StatsCollector(MemoryStatsCollector):
         use redis to collect stats.
     """
     def __init__(self, crawler):
-
         super(StatsCollector, self).__init__(crawler)
         self.crawler = crawler
 
     @property
     def redis_conn(self):
-
         return self.crawler.spider.redis_conn
 
-    @stats_wrapper
     def update(self, crawlid):
-
         key = "crawlid:%s" % crawlid
         self.redis_conn.hmset(key,
                               {"crawlid": crawlid,
@@ -39,7 +35,6 @@ class StatsCollector(MemoryStatsCollector):
 
     @stats_wrapper
     def set_failed_download(self, meta, reason, _type="pages"):
-
         self.redis_conn.hincrby("crawlid:%s" % meta.get('crawlid'), "failed_download_%s"%_type, 1)
         self.update(meta.get('crawlid'))
         self.set_failed(meta, reason, _type)
@@ -51,20 +46,17 @@ class StatsCollector(MemoryStatsCollector):
 
     @stats_wrapper
     def inc_total_pages(self, crawlid, num=1):
-
         self.redis_conn.hincrby("crawlid:%s" % crawlid, "total_pages", num)
         self.update(crawlid)
 
     @stats_wrapper
     def set_total_pages(self, crawlid, num=1):
-
         self.redis_conn.hset("crawlid:%s" % crawlid, "total_pages", num)
         self.update(crawlid)
 
 
     @stats_wrapper
     def inc_crawled_pages(self, crawlid):
-
         self.redis_conn.hincrby("crawlid:%s" % crawlid, "crawled_pages", 1)
         self.update(crawlid)
         workerid=self.crawler.spider.worker_id

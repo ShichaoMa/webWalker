@@ -24,15 +24,15 @@ class RedisFeed:
     @classmethod
     def parse_args(cls):
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1")
-        parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379)
-        parser.add_argument('-u', '--url', type=str)
-        parser.add_argument('-uf', '--urls-file', type=str)
-        parser.add_argument('-c', '--crawlid', required=True, type=str)
-        parser.add_argument('-s', '--spiderid', required=True, type=str)
-        parser.add_argument('-p', '--priority', type=int, default=100)
-        parser.add_argument('--custom', action="store_true")
+        parser = argparse.ArgumentParser(description="usage: %prog [options]")
+        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1", help="Redis host to feed in. ")
+        parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379, help="Redis port to feed in. ")
+        parser.add_argument('-u', '--url', type=str, help="The url to crawl, a list of products. ")
+        parser.add_argument('-uf', '--urls-file', type=str, help="The urlsfile to crawl, single product. ")
+        parser.add_argument('-c', '--crawlid', required=True, type=str, help="An unique Id for a crawl task. ")
+        parser.add_argument('-s', '--spiderid', required=True, type=str, help="The website you wanna crawl. ")
+        parser.add_argument('-p', '--priority', type=int, default=100, help="Feed in the task queue with priority. ")
+        parser.add_argument('--custom', action="store_true", help="Use the custom redis whether or not. ")
         return cls(**vars(parser.parse_args()))
 
     def setup(self):

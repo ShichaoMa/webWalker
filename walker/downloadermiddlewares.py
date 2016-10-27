@@ -1,22 +1,23 @@
 # -*- coding:utf-8 -*-
+import os
 import base64
 import random
 import traceback
+
+from urlparse import urljoin
+from twisted.internet import defer
+from twisted.internet.error import TimeoutError, DNSLookupError, \
+    ConnectionRefusedError, ConnectionDone, ConnectError, \
+    ConnectionLost, TCPTimedOutError
 
 from scrapy import signals
 from scrapy.downloadermiddlewares.cookies import CookiesMiddleware
 from scrapy.downloadermiddlewares.redirect import RedirectMiddleware
 from scrapy.downloadermiddlewares.retry import RetryMiddleware
-from scrapy.downloadermiddlewares.stats import DownloaderStats
 from scrapy.downloadermiddlewares.useragent import UserAgentMiddleware
 from scrapy.exceptions import IgnoreRequest, NotConfigured
-from scrapy.utils.response import response_httprepr, response_status_message
+from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
-from six.moves.urllib.parse import urljoin
-from twisted.internet import defer
-from twisted.internet.error import TimeoutError, DNSLookupError, \
-    ConnectionRefusedError, ConnectionDone, ConnectError, \
-    ConnectionLost, TCPTimedOutError
 
 from spiders.exception_process import process_exception_method_wrapper, \
     process_requset_method_wrapper, process_response_method_wrapper
@@ -177,11 +178,12 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
         if 'dont_merge_cookies' in request.meta:
             return
-
+        self.logger.debug("process in CustomCookiesMiddleware. ")
         headers = self.settings.get("HEADERS", {}).get(spider.name, {}).copy()
         cookiejarkey = request.meta.get("cookiejar", "default")
         jar = self.jars[cookiejarkey]
-        request.cookies.update(parse_cookie(headers.get("Cookie", "")))
+        if not request.meta.get("dont_update_cookies"):
+            request.cookies.update(parse_cookie(headers.get("Cookie", "")))
         cookies = self._get_request_cookies(jar, request)
 
         for cookie in cookies:
@@ -191,8 +193,11 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
         jar.add_cookie_header(request)
         headers.pop('Cookie', None)
         request.headers.update(headers)
-        self.logger.debug("current cookies is %s" % cookies)
-        self._debug_cookie(request, spider)
+        cl = request.headers.getlist('Cookie')
+        if cl:
+            msg = "Sending cookies to: %s" % request + os.linesep
+            msg += os.linesep.join("Cookie: %s" % c for c in cl)
+            self.logger.debug(msg)
 
     @process_response_method_wrapper
     def process_response(self, request, response, spider):

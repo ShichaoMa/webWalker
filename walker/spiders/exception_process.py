@@ -3,7 +3,6 @@ import traceback
 from functools import wraps
 
 from scrapy.exceptions import IgnoreRequest
-from scrapy.http import Request
 
 from utils import get_ip_address
 
