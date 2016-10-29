@@ -45,9 +45,15 @@ class RedisFeed:
             from redis import Redis
 
         self.redis_conn = Redis(host=self.host, port=self.port)
-        self.redis_conn.delete("crawlid:%s" % self.crawlid)
-        self.redis_conn.delete("failed_pages:%s" % self.crawlid)
-        self.redis_conn.delete("crawlid:%s:model" % self.crawlid)
+        self.clean_previous_task(self.crawlid)
+
+    def clean_previous_task(self, crawlid):
+        failed_keys = self.redis_conn.keys("failed_download_*:%s" % crawlid)
+        for fk in failed_keys:
+            self.redis_conn.delete(fk)
+
+        self.redis_conn.delete("crawlid:%s" % crawlid)
+        self.redis_conn.delete("crawlid:%s:model" % crawlid)
 
     def start(self):
         sucess_rate, failed_rate = 0, 0
@@ -66,6 +72,7 @@ class RedisFeed:
                     self.failed_count += self.feed(self.get_name(url), json_req)
                     sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
+                self.redis_conn.expire("crawlid:%s" % self.crawlid, 2 * 24 * 60 * 60)
         # 分类抓取
         else:
             url_list = self.url.split("     ")

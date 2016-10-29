@@ -206,15 +206,15 @@ def url_path_arg_increment(pattern_str, url):
     @param url: 'http://www.timberland.com.hk/en/men-apparel-shirts‘
     @return:'http://www.timberland.com.hk/en/men-apparel-shirts/page/2/'
     """
-    pattern = pattern_str.split("=")[1]
-    mth = re.search(pattern, url)
+    parts = urlparse(url)
+    pattern = pattern_str.split("=", 1)[1]
+    mth = re.search(pattern, parts.path)
     if mth:
-        return re.sub(pattern, "\g<1>%s\g<3>"%(int(mth.group(2))+1), url)
+        path = re.sub(pattern, "\g<1>%s\g<3>"%(int(mth.group(2))+1), parts.path)
     else:
         page_num = 2
-        parts = urlparse(url)
         path = re.sub(r"\((.*)\)(?:\(.*\))\((.*)\)", repl_wrapper(parts.path, page_num), pattern).replace("\\", "")
-        return urlunparse(parts._replace(path=path))
+    return urlunparse(parts._replace(path=path))
 
 
 def repl_wrapper(path, page_num):
@@ -263,3 +263,8 @@ def get_val(sel_meta, response, item=None, is_after=False):
             val = extract(item, response)
 
     return val
+
+
+if __name__ == "__main__":
+    print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
+                           "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
