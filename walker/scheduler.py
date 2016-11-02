@@ -83,6 +83,7 @@ class Scheduler(Logger):
             self.logger.info("length of queue %s is %s" %
                              (queue, self.redis_conn.zcard(queue)))
 
+            item = None
             if self.settings.get("CUSTOM_REDIS"):
                 item = self.redis_conn.zpop(queue)
             else:
@@ -90,15 +91,24 @@ class Scheduler(Logger):
                 pipe.multi()
                 pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
                 result, count = pipe.execute()
-                item = result[0]
+                # 1.1.8 add
+                if result:
+                    item = result[0]
 
             if item:
                 item = json.loads(item)
                 self.present_item = item
+                headers = item.get("headers", {})
+                body = item.get("body")
+                if item.get("method"):
+                    method = item.get("method")
+                else:
+                    method = "GET"
+
                 try:
-                    req = Request(item['url'])
+                    req = Request(item['url'], method=method, body=body, headers=headers)
                 except ValueError:
-                    req = Request('http://' + item['url'])
+                    req = Request('http://' + item['url'], method=method, body=body, headers=headers)
 
                 if 'callback' in item:
                     cb = item['callback']
