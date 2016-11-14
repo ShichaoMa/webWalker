@@ -24,15 +24,15 @@ class RedisFeed:
     @classmethod
     def parse_args(cls):
 
-        parser = argparse.ArgumentParser()
-        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1")
-        parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379)
-        parser.add_argument('-u', '--url', type=str)
-        parser.add_argument('-uf', '--urls-file', type=str)
-        parser.add_argument('-c', '--crawlid', required=True, type=str)
-        parser.add_argument('-s', '--spiderid', required=True, type=str)
-        parser.add_argument('-p', '--priority', type=int, default=100)
-        parser.add_argument('--custom', action="store_true")
+        parser = argparse.ArgumentParser(description="usage: %prog [options]")
+        parser.add_argument('-rh', "--redis-host", dest="host", type=str, default="127.0.0.1", help="Redis host to feed in. ")
+        parser.add_argument('-rp', "--redis-port", dest="port", type=int, default=6379, help="Redis port to feed in. ")
+        parser.add_argument('-u', '--url', type=str, help="The url to crawl, a list of products. ")
+        parser.add_argument('-uf', '--urls-file', type=str, help="The urlsfile to crawl, single product. ")
+        parser.add_argument('-c', '--crawlid', required=True, type=str, help="An unique Id for a crawl task. ")
+        parser.add_argument('-s', '--spiderid', required=True, type=str, help="The website you wanna crawl. ")
+        parser.add_argument('-p', '--priority', type=int, default=100, help="Feed in the task queue with priority. ")
+        parser.add_argument('--custom', action="store_true", help="Use the custom redis whether or not. ")
         return cls(**vars(parser.parse_args()))
 
     def setup(self):
@@ -45,9 +45,15 @@ class RedisFeed:
             from redis import Redis
 
         self.redis_conn = Redis(host=self.host, port=self.port)
-        self.redis_conn.delete("crawlid:%s" % self.crawlid)
-        self.redis_conn.delete("failed_pages:%s" % self.crawlid)
-        self.redis_conn.delete("crawlid:%s:model" % self.crawlid)
+        self.clean_previous_task(self.crawlid)
+
+    def clean_previous_task(self, crawlid):
+        failed_keys = self.redis_conn.keys("failed_download_*:%s" % crawlid)
+        for fk in failed_keys:
+            self.redis_conn.delete(fk)
+
+        self.redis_conn.delete("crawlid:%s" % crawlid)
+        self.redis_conn.delete("crawlid:%s:model" % crawlid)
 
     def start(self):
         sucess_rate, failed_rate = 0, 0
@@ -66,6 +72,7 @@ class RedisFeed:
                     self.failed_count += self.feed(self.get_name(url), json_req)
                     sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
+                self.redis_conn.expire("crawlid:%s" % self.crawlid, 2 * 24 * 60 * 60)
         # 分类抓取
         else:
             url_list = self.url.split("     ")

@@ -8,9 +8,12 @@ tldextract.tldextract.LOG.setLevel("INFO")
 from scrapy.http.request import Request
 
 from walker.spiders.utils import Logger, parse_cookie
+from walker.spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
 
 
 class Scheduler(Logger):
+    # 记录当前正在处理的item, 在处理异常时使用
+    present_item = None
 
     def __init__(self, crawler):
 
@@ -50,13 +53,13 @@ class Scheduler(Logger):
             'cookies': request.cookies,
             'meta': request.meta,
             '_encoding': request._encoding,
-            'priority': request.priority,
             'dont_filter': request.dont_filter,
             'callback': None if request.callback is None else request.callback.func_name,
             'errback': None if request.errback is None else request.errback.func_name,
         }
         return req_dict
 
+    @enqueue_request_method_wrapper
     def enqueue_request(self, request):
 
         req_dict = self.request_to_dict(request)
@@ -65,11 +68,12 @@ class Scheduler(Logger):
             sid=req_dict['meta']['spiderid'],
             dom=ex_res.domain,
             suf=ex_res.suffix)
-        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["priority"]))
+        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["meta"]["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
 
+    @next_request_method_wrapper
     def next_request(self):
 
         queues = self.redis_conn.keys(self.queue_name)
@@ -79,6 +83,7 @@ class Scheduler(Logger):
             self.logger.info("length of queue %s is %s" %
                              (queue, self.redis_conn.zcard(queue)))
 
+            item = None
             if self.settings.get("CUSTOM_REDIS"):
                 item = self.redis_conn.zpop(queue)
             else:
@@ -86,15 +91,24 @@ class Scheduler(Logger):
                 pipe.multi()
                 pipe.zrange(queue, 0, 0).zremrangebyrank(queue, 0, 0)
                 result, count = pipe.execute()
-                item = result[0]
+                # 1.1.8 add
+                if result:
+                    item = result[0]
 
             if item:
                 item = json.loads(item)
+                self.present_item = item
+                headers = item.get("headers", {})
+                body = item.get("body")
+                if item.get("method"):
+                    method = item.get("method")
+                else:
+                    method = "GET"
 
                 try:
-                    req = Request(item['url'])
+                    req = Request(item['url'], method=method, body=body, headers=headers)
                 except ValueError:
-                    req = Request('http://' + item['url'])
+                    req = Request('http://' + item['url'], method=method, body=body, headers=headers)
 
                 if 'callback' in item:
                     cb = item['callback']
@@ -129,6 +143,7 @@ class Scheduler(Logger):
                         req.cookies = item['cookie']
                     elif isinstance(item['cookie'], basestring):
                         req.cookies = parse_cookie(item['cookie'])
+
                 return req
 
 

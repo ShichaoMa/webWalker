@@ -7,10 +7,13 @@ import errno
 import socket
 import struct
 import psutil
+
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
+
+from helper import function_xpath_common, function_re_common
 
 
 class LoggerDiscriptor(object):
@@ -105,17 +108,12 @@ def _get_net_interface():
 
 
 def get_netcard():
-
     netcard_info = []
     info = psutil.net_if_addrs()
-
     for k,v in info.items():
-
         for item in v:
-
             if item[0] == 2 and not item[1]=='127.0.0.1':
                 netcard_info.append((k,item[1]))
-
     return netcard_info
 
 
@@ -135,25 +133,7 @@ def get_ip_address():
             return ips[0][1]
         else:
             shell_command = "ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
-            os.popen(shell_command).read().strip()
-        #
-        # try:
-        #     r = _get_ip_address(_get_net_interface())
-        # except Exception:
-        #
-        #     try:
-        #         r = _get_ip_address('enp0s25')
-        #     except Exception:
-        #
-        #         try:
-        #             r = _get_ip_address('enp0s8')
-        #         except Exception:
-        #
-        #             try:
-        #                 r = _get_ip_address('ens32')
-        #             except Exception:
-        #                 r = os.popen( shell_command ).read().strip()
-    return r
+            return os.popen(shell_command).read().strip()
 
 
 def url_arg_increment(arg_pattern, url):
@@ -229,15 +209,15 @@ def url_path_arg_increment(pattern_str, url):
     @param url: 'http://www.timberland.com.hk/en/men-apparel-shirts‘
     @return:'http://www.timberland.com.hk/en/men-apparel-shirts/page/2/'
     """
-    pattern = pattern_str.split("=")[1]
-    mth = re.search(pattern, url)
+    parts = urlparse(url)
+    pattern = pattern_str.split("=", 1)[1]
+    mth = re.search(pattern, parts.path)
     if mth:
-        return re.sub(pattern, "\g<1>%s\g<3>"%(int(mth.group(2))+1), url)
+        path = re.sub(pattern, "\g<1>%s\g<3>"%(int(mth.group(2))+1), parts.path)
     else:
         page_num = 2
-        parts = urlparse(url)
         path = re.sub(r"\((.*)\)(?:\(.*\))\((.*)\)", repl_wrapper(parts.path, page_num), pattern).replace("\\", "")
-        return urlunparse(parts._replace(path=path))
+    return urlunparse(parts._replace(path=path))
 
 
 def repl_wrapper(path, page_num):
@@ -250,10 +230,44 @@ def repl_wrapper(path, page_num):
     return _repl
 
 
+def get_val(sel_meta, response, item=None, is_after=False):
+    sel = response.selector if hasattr(response, "selector") else response
+    val = ""
+    expression_list = ["re", "xpath", "css"]
+    while not val:
+        try:
+            selector = expression_list.pop(0)
+        except IndexError:
+            break
+
+        expressions = sel_meta.get(selector)
+        if expressions:
+            for expression in expressions:
+                try:
+                    val_ = getattr(sel, selector)(expression)
+                    function = sel_meta.get("function") or globals()["function_%s_common" % selector]
+                    if is_after:
+                        function = sel_meta.get("function_after") or function
+                    val = function(val_, item)
+
+                except Exception:
+                    print ">>>>", expression
+                    raise
+
+                if val:
+                    break
+
+    if not val:
+        extract = sel_meta.get("extract")
+
+        if is_after:
+            extract = sel_meta.get("extract_after") or extract
+        if extract:
+            val = extract(item, response)
+
+    return val
+
+
 if __name__ == "__main__":
-    #get_ip_address()
-    hostname = socket.gethostname()
-    IPinfo = socket.gethostbyname_ex(hostname)
-    print IPinfo[-1][-1]
-
-
+    print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
+                           "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
