@@ -124,7 +124,10 @@ def get_ip_address():
     if sys.platform == "win32":
         hostname = socket.gethostname()
         IPinfo = socket.gethostbyname_ex(hostname)
-        r = IPinfo[2][2]
+        try:
+            r = IPinfo[2][2]
+        except IndexError:
+            r = IPinfo[-1][-1]
     else:
         ips = get_netcard()
 
@@ -245,4 +248,12 @@ def repl_wrapper(path, page_num):
         else:
             return path + sub_path
     return _repl
+
+
+if __name__ == "__main__":
+    #get_ip_address()
+    hostname = socket.gethostname()
+    IPinfo = socket.gethostbyname_ex(hostname)
+    print IPinfo[-1][-1]
+
 
