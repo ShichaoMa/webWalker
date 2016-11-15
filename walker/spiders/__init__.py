@@ -32,7 +32,7 @@ def next_request_callback(self, response):
     v = filter(lambda x:x, map(lambda x:x if x[0] == k else "", filed_list))[0][1]
     item = self.reset_item(response.meta['item_half'])
     item[k] = get_val(v, response, item, is_after=True) or v.get("default", "")
-    self.logger.debug("crawlid:%s, product_id %s, suceessfully yield item"%(item.get("crawlid"), item.get("product_id", "unknow")))
+    self.logger.info("crawlid:%s, product_id %s, suceessfully yield item"%(item.get("crawlid"), item.get("product_id", "unknow")))
     self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
 
     return item
@@ -203,7 +203,7 @@ class ClusterSpider(Spider, Logger):
         if request:
             return request
 
-        self.logger.debug("crawlid:%s, product_id: %s, suceessfully yield item" % (
+        self.logger.info("crawlid:%s, product_id: %s, suceessfully yield item" % (
         item.get("crawlid"), item.get("product_id", "unknow")))
         self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
         return item
