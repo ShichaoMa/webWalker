@@ -127,6 +127,7 @@ def get_ip_address():
             r = IPinfo[2][2]
         except IndexError:
             r = IPinfo[-1][-1]
+        return r
     else:
         ips = get_netcard()
 
@@ -284,5 +285,6 @@ def get_val(sel_meta, response, item=None, is_after=False):
 
 
 if __name__ == "__main__":
-    print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
-                                 "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
+    # print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
+    #                              "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
+    print get_ip_address()
