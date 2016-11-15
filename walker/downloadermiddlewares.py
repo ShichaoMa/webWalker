@@ -138,7 +138,8 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
             return redirected
         else:
             self.logger.info("Discarding %s: max redirections reached" % request.url)
-            request.meta["url"] = request.url
+            # 错误信息记录出错的url ，而不是最初的url
+            # request.meta["url"] = request.url
 
             if request.meta.get("callback") == "parse":
                 # 对于分类页失败，总数+1
@@ -250,7 +251,8 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             return self._retry(request, "%s:%s" % (exception.__class__.__name__, exception), spider)
 
         else:
-            request.meta["url"] = request.url
+            # 错误信息记录出错的url ，而不是最初的url
+            # request.meta["url"] = request.url
 
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
@@ -281,7 +283,8 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             return retryreq
 
         else:
-            request.meta["url"] = request.url
+            # 错误信息记录出错的url ，而不是最初的url
+            # request.meta["url"] = request.url
 
             if request.meta.get("callback") == "parse":
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])

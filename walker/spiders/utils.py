@@ -1,19 +1,20 @@
 # -*- coding:utf-8 -*-
-import logging
-import sys
 import os
 import re
+import sys
 import errno
 import socket
 import struct
 import psutil
+import logging
+import traceback
 
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
 
-from helper import function_xpath_common, function_re_common
+from helper import function_xpath_common, function_re_common, re_exchange, xpath_exchange
 
 
 class LoggerDiscriptor(object):
@@ -231,6 +232,7 @@ def get_val(sel_meta, response, item=None, is_after=False):
     sel = response.selector if hasattr(response, "selector") else response
     val = ""
     expression_list = ["re", "xpath", "css"]
+    debug = sel_meta.get("debug")
     while not val:
         try:
             selector = expression_list.pop(0)
@@ -240,6 +242,7 @@ def get_val(sel_meta, response, item=None, is_after=False):
         expressions = sel_meta.get(selector)
         if expressions:
             for expression in expressions:
+                val_ = None
                 try:
                     val_ = getattr(sel, selector)(expression)
                     function = sel_meta.get("function") or globals()["function_%s_common" % selector]
@@ -248,23 +251,35 @@ def get_val(sel_meta, response, item=None, is_after=False):
                     val = function(val_, item)
 
                 except Exception:
-                    print ">>>>", expression
+                    if debug:
+                        print ">>>> exchange error:", traceback.format_exc()
                     raise
+                finally:
+                    if debug:
+                        print ">>>> expression: ", expression
+                        print ">>>> exchange value: ", xpath_exchange(val_) if hasattr(val_, "extract") else re_exchange(val_)
 
                 if val:
                     break
 
     if not val:
-        extract = sel_meta.get("extract")
-
-        if is_after:
-            extract = sel_meta.get("extract_after") or extract
-        if extract:
-            val = extract(item, response)
+        try:
+            extract = sel_meta.get("extract")
+            if is_after:
+                extract = sel_meta.get("extract_after") or extract
+            if extract:
+                val = extract(item, response)
+        except Exception:
+            if debug:
+                print ">>>> extract error: ", traceback.format_exc()
+            raise
+        finally:
+            if debug:
+                print ">>>> extract value: ", val
 
     return val
 
 
 if __name__ == "__main__":
     print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
-                           "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
+                                 "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
