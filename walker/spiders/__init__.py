@@ -1,9 +1,7 @@
 # -*- coding:utf-8 -*-
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
-
 import time
+import copy
 import socket
 from urlparse import urlparse, urljoin
 
@@ -26,16 +24,21 @@ PAGE_XPATH = {}
 
 @parse_next_method_wrapper
 def next_request_callback(self, response):
-    k = response.meta.get("next_key")
-    self.logger.debug("start in parse %s ..." % k)
-    filed_list = ITEM_FIELD[self.name]
-    v = filter(lambda x:x, map(lambda x:x if x[0] == k else "", filed_list))[0][1]
-    item = self.reset_item(response.meta['item_half'])
-    item[k] = get_val(v, response, item, is_after=True) or v.get("default", "")
-    self.logger.info("crawlid:%s, product_id %s, suceessfully yield item"%(item.get("crawlid"), item.get("product_id", "unknow")))
-    self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
 
-    return item
+    key = response.meta.get("next_key")
+    field = copy.deepcopy(ITEM_FIELD[self.name])
+
+    for k, v in ITEM_FIELD[self.name]:
+        if k == key:
+            break
+        else:
+            field.pop(0)
+
+    self.logger.debug("start in parse %s ..." % map(lambda x: x[0], field))
+    item = self.reset_item(response.meta['item_half'])
+    # 删除增发请求的这个字段的request，防止递归
+    del field[0][1]["request"]
+    return self.process_forward(self.common_property(response, item, field), response, item)
 
 
 def send_request_wrapper(response, item, k):
@@ -127,20 +130,27 @@ class ClusterSpider(Spider, Logger):
 
         return item
 
-    def common_property(self, response, item):
+    def common_property(self, response, item, spider_item_field=None):
+        # 强化增发请求后获取字段的能力，增加请求可以使用该方法同时获取多个字段，同时还可以继续增发请求，理论上支持无限增发
+        field = spider_item_field or copy.deepcopy(ITEM_FIELD[self.name])
 
-        for k, v in ITEM_FIELD[self.name]:
-            val = get_val(v, response, item)
-
+        while field:
+            k, v = field.pop(0)
+            # 只有在spider_item_field存在且没有要求进一步增发请求时，才会判定会是增发请求后的操作
+            # 也就是说，如果增发请求后有字段被要求再次增发，当前（未再次增发之前）的处理函数会调用function和axtract，不会调用after后缀的函数
+            # 对于完成过一次增发请求后不需要再次增发的字段，函数带不带after后缀并没有什么区别
+            is_after = (True if spider_item_field is not None else False) and not v.get("request")
+            val = get_val(v, response, item, is_after)
             if not val:
                 request_func = v.get("request")
 
                 if request_func:
                     request = send_request_wrapper(response, item, k)(request_func)()
+
                     if request:
                         return request
-
-            item[k] = val or v.get("default", "")
+            # 获取值的顺序为，增发请求后的值优先，其次是增发前的值，其次是默认值。 add by msc 2016.11.26
+            item[k] = val or item.get(k) or v.get("default", "")
 
     @parse_method_wrapper
     def parse(self, response):
@@ -196,9 +206,12 @@ class ClusterSpider(Spider, Logger):
 
         if getattr(self, 'have_duplicate', False):
             result = self.total_pages_decrement(response, item.get("product_id"))
-
             if not result:
                 return
+
+        return self.process_forward(request, response, item)
+
+    def process_forward(self, request, response, item):
 
         if request:
             return request
