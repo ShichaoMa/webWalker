@@ -123,11 +123,7 @@ def get_ip_address():
     if sys.platform == "win32":
         hostname = socket.gethostname()
         IPinfo = socket.gethostbyname_ex(hostname)
-        try:
-            r = IPinfo[2][2]
-        except IndexError:
-            r = IPinfo[-1][-1]
-        return r
+        return IPinfo[2][2]
     else:
         ips = get_netcard()
 
@@ -238,22 +234,25 @@ def get_val(sel_meta, response, item=None, is_after=False):
     expression_list = ["re", "xpath", "css"]
     debug = sel_meta.get("debug")
     while not val:
+
         try:
             selector = expression_list.pop(0)
         except IndexError:
             break
 
         expressions = sel_meta.get(selector)
+
         if expressions:
+            function = sel_meta.get("function") or globals()["function_%s_common" % selector]
+
+            if is_after:
+                function = sel_meta.get("function_after") or function
+
             for expression in expressions:
                 val_ = None
                 try:
                     val_ = getattr(sel, selector)(expression)
-                    function = sel_meta.get("function") or globals()["function_%s_common" % selector]
-                    if is_after:
-                        function = sel_meta.get("function_after") or function
                     val = function(val_, item)
-
                 except Exception:
                     if debug:
                         print ">>>> exchange error:", traceback.format_exc()
@@ -285,6 +284,5 @@ def get_val(sel_meta, response, item=None, is_after=False):
 
 
 if __name__ == "__main__":
-    # print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
-    #                              "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
-    print get_ip_address()
+    print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
+                           "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")

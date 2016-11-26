@@ -36,7 +36,7 @@ def next_request_callback(self, response):
 
     self.logger.debug("start in parse %s ..." % map(lambda x: x[0], field))
     item = self.reset_item(response.meta['item_half'])
-    # 删除增发请求的这个字段的request，防止递归
+    # 删除增发请求的这个字段的request，防止递归 add by msc 2016.11.26
     del field[0][1]["request"]
     return self.process_forward(self.common_property(response, item, field), response, item)
 
@@ -137,20 +137,25 @@ class ClusterSpider(Spider, Logger):
         while field:
             k, v = field.pop(0)
             # 只有在spider_item_field存在且没有要求进一步增发请求时，才会判定会是增发请求后的操作
-            # 也就是说，如果增发请求后有字段被要求再次增发，当前（未再次增发之前）的处理函数会调用function和axtract，不会调用after后缀的函数
-            # 对于完成过一次增发请求后不需要再次增发的字段，函数带不带after后缀并没有什么区别
+            # 也就是说，如果增发请求后有字段被要求再次增发，当前（未再次增发之前）的处理函数会调用function和extract，不会调用after后缀的函数
+            # 对于完成过一次增发请求后不需要再次增发的字段，函数带不带after后缀并没有什么区别 add by msc 2016.11.25
             is_after = (True if spider_item_field is not None else False) and not v.get("request")
             val = get_val(v, response, item, is_after)
-            if not val:
-                request_func = v.get("request")
+            request_func = v.get("request")
 
-                if request_func:
+            if request_func:
+                if not val:
                     request = send_request_wrapper(response, item, k)(request_func)()
 
                     if request:
                         return request
-            # 获取值的顺序为，增发请求后的值优先，其次是增发前的值，其次是默认值。 add by msc 2016.11.26
+
+            # 获取值的顺序为，增发请求后的值优先，其次是增发前的值，其次是默认值。 add by msc 2016.11.25
             item[k] = val or item.get(k) or v.get("default", "")
+            # 对于有增发请求的需求的字段，不管要不要增发请求，都会停止获取需要增发请求的字段之后字段的值
+            # 这么做的目的是为了防止没有对于不确定是否增发的字段，若未增发，后续字段会在第一个响应的页面中获取后续字段的值 add by msc 2016.11.26
+            if request_func:
+                break
 
     @parse_method_wrapper
     def parse(self, response):
