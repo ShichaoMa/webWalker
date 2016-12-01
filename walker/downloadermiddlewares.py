@@ -259,7 +259,8 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
 
             self.logger.error(exception)
             self.logger.error("in retry request error %s" %traceback.format_exc())
-            spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
+            # 记录重了
+            # spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
             raise IgnoreRequest("%s unhandle error. " % exception)
 
 
