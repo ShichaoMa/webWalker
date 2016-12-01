@@ -123,7 +123,10 @@ def get_ip_address():
     if sys.platform == "win32":
         hostname = socket.gethostname()
         IPinfo = socket.gethostbyname_ex(hostname)
-        return IPinfo[2][2]
+        try:
+            return IPinfo[-1][-1]
+        except IndexError:
+            return "127.0.0.1"
     else:
         ips = get_netcard()
 
