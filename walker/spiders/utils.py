@@ -11,6 +11,7 @@ import traceback
 
 from urllib import urlencode
 from urlparse import urlparse, urlunparse
+from scrapy.http import Request, FormRequest
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
 
@@ -80,6 +81,38 @@ class Logger(object):
             logger.set_handler(file_handler)
 
         return logger
+
+
+def send_request_wrapper(response, item, k, callback):
+
+    def process_request(func):
+        def wrapper():
+            url, cookies, method, body = func(item, response)
+            response.meta['item_half'] = dict(item)
+            response.meta['next_key'] = k
+            response.meta["priority"] += 1
+
+            if cookies:
+                response.meta["cookie"] = cookies
+                response.meta["dont_update_cookies"] = True
+
+            if url and method == "post":
+                return FormRequest(
+                    url=url,
+                    callback=callback,
+                    formdata=body,
+                    meta=response.meta,
+                    dont_filter=True)
+            if url:
+                return Request(
+                        url=url,
+                        meta=response.meta,
+                        callback=callback,
+                        dont_filter=response.request.dont_filter,
+                    )
+
+        return wrapper
+    return process_request
 
 
 def parse_cookie(string):

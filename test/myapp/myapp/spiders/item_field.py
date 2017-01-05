@@ -19,6 +19,13 @@ ITEM_FIELD = {
                 '//li[@itemprop="productID"]/text()',
             ],
         }),
+    ],
+    "douban": [
+        ("title", {
+            "xpath": [
+                "//div[@class='item-info']/h3/text()",
+            ]
+        })
     ]
 }
 

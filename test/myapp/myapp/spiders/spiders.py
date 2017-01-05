@@ -2,5 +2,6 @@
 
 
 SPIDERS = {
-    "bluefly": {}
+    "bluefly": {},
+    "douban": {}
 }

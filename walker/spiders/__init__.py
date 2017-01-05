@@ -1,5 +1,4 @@
 # -*- coding:utf-8 -*-
-import sys
 import time
 import copy
 import socket
@@ -7,13 +6,13 @@ from urlparse import urlparse, urljoin
 
 from scrapy import Field, Item, signals
 from scrapy.exceptions import DontCloseSpider
-from scrapy.http import Request, FormRequest
+from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.response import response_status_message
 
 from exception_process import parse_method_wrapper, parse_next_method_wrapper
 from utils import get_ip_address, url_arg_increment, Logger, get_val,\
-     url_item_arg_increment, url_path_arg_increment, LoggerDiscriptor
+     url_item_arg_increment, url_path_arg_increment, LoggerDiscriptor, send_request_wrapper
 
 
 BASE_FIELD = ["success", "domain", "exception", "crawlid", "spiderid", "workerid", "response_url", "status_code", "status_msg", "url", "seed", "timestamp"]
@@ -22,63 +21,9 @@ ITEM_XPATH = {}
 PAGE_XPATH = {}
 
 
-@parse_next_method_wrapper
-def next_request_callback(self, response):
-
-    key = response.meta.get("next_key")
-    field = copy.deepcopy(ITEM_FIELD[self.name])
-
-    for k, v in ITEM_FIELD[self.name]:
-        if k == key:
-            break
-        else:
-            field.pop(0)
-
-    self.logger.debug("start in parse %s ..." % map(lambda x: x[0], field))
-    item = self.reset_item(response.meta['item_half'])
-    # 删除增发请求的这个字段的request，防止递归 add by msc 2016.11.26
-    del field[0][1]["request"]
-    return self.process_forward(self.common_property(response, item, field), response, item)
-
-
-def send_request_wrapper(response, item, k):
-
-    def process_request(func):
-
-        def wrapper():
-            url, cookies, method, body = func(item, response)
-            response.meta['item_half'] = dict(item)
-            response.meta['next_key'] = k
-            response.meta["priority"] += 1
-
-            if cookies:
-                response.meta["cookie"] = cookies
-                response.meta["dont_update_cookies"] = True
-
-            if url and method == "post":
-                return FormRequest(
-                    url=url,
-                    callback=next_request_callback,
-                    formdata=body,
-                    meta=response.meta,
-                    dont_filter=True)
-            if url:
-                return Request(
-                        url=url,
-                        meta=response.meta,
-                        callback=next_request_callback,
-                        dont_filter=response.request.dont_filter,
-                    )
-
-        return wrapper
-
-    return process_request
-
-
 class ClusterSpider(Spider, Logger):
 
     name = "cluster_spider"
-    next_request_callback = next_request_callback
     proxy = None
     change_proxy = None
     logger = LoggerDiscriptor()
@@ -145,7 +90,7 @@ class ClusterSpider(Spider, Logger):
 
             if request_func:
                 if not val:
-                    request = send_request_wrapper(response, item, k)(request_func)()
+                    request = send_request_wrapper(response, item, k, self.next_request_callback)(request_func)()
 
                     if request:
                         return request
@@ -266,6 +211,26 @@ class ClusterSpider(Spider, Logger):
                 self.logger.error("failure has NO response")
         else:
             self.logger.error("failure or failure.value is NULL, failure: %s" % failure)
+
+    @parse_next_method_wrapper
+    def next_request_callback(self, response):
+
+        key = response.meta.get("next_key")
+        field = copy.deepcopy(ITEM_FIELD[self.name])
+
+        for k, v in ITEM_FIELD[self.name]:
+            if k == key:
+                break
+            else:
+                field.pop(0)
+
+        self.logger.debug("start in parse %s ..." % map(lambda x: x[0], field))
+        item = self.reset_item(response.meta['item_half'])
+        # 删除增发请求的这个字段的request，防止递归 add by msc 2016.11.26
+        del field[0][1]["request"]
+        return self.process_forward(self.common_property(response, item, field), response, item)
+
+
 
 
 def start(spiders, globals, module_name, item_field, item_xpath, page_xpath):
