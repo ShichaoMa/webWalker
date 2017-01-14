@@ -2,9 +2,6 @@
 import json
 import random
 
-import tldextract
-tldextract.tldextract.LOG.setLevel("INFO")
-
 from scrapy.http.request import Request
 
 from walker.spiders.utils import Logger, parse_cookie
@@ -19,21 +16,17 @@ class Scheduler(Logger):
 
         self.settings = crawler.settings
         self.set_logger(crawler)
-
         if self.settings.get("CUSTOM_REDIS"):
             from custom_redis.client import Redis
         else:
             from redis import Redis
-
         self.redis_conn = Redis(self.settings.get("REDIS_HOST"),
                                 self.settings.get("REDIS_PORT"))
         self.queue_name = "%s:*:queue"
         self.queues = {}
-        self.extract = tldextract.extract
 
     @classmethod
     def from_crawler(cls, crawler):
-
         return cls(crawler)
 
     def open(self, spider):
@@ -63,11 +56,7 @@ class Scheduler(Logger):
     def enqueue_request(self, request):
 
         req_dict = self.request_to_dict(request)
-        ex_res = self.extract(req_dict['url'])
-        key = "{sid}:{dom}.{suf}:queue".format(
-            sid=req_dict['meta']['spiderid'],
-            dom=ex_res.domain,
-            suf=ex_res.suffix)
+        key = "{sid}:item:queue".format(sid=req_dict['meta']['spiderid'])
         self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["meta"]["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],

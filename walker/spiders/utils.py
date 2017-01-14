@@ -264,12 +264,11 @@ def repl_wrapper(path, page_num):
     return _repl
 
 
-def get_val(sel_meta, response, item=None, is_after=False):
+def get_val(sel_meta, response, item=None, is_after=False, self=None, key=None):
     sel = response.selector if hasattr(response, "selector") else response
-    val = ""
+    value = ""
     expression_list = ["re", "xpath", "css"]
-    debug = sel_meta.get("debug")
-    while not val:
+    while not value:
 
         try:
             selector = expression_list.pop(0)
@@ -285,38 +284,35 @@ def get_val(sel_meta, response, item=None, is_after=False):
                 function = sel_meta.get("function_after") or function
 
             for expression in expressions:
-                val_ = None
                 try:
-                    val_ = getattr(sel, selector)(expression)
-                    val = function(val_, item)
-                except Exception:
-                    if debug:
-                        print ">>>> exchange error:", traceback.format_exc()
-                    raise
-                finally:
-                    if debug:
-                        print ">>>> expression: ", expression
-                        print ">>>> exchange value: ", xpath_exchange(val_) if hasattr(val_, "extract") else re_exchange(val_)
-
-                if val:
+                    raw_data = getattr(sel, selector)(expression)
+                    value = function(raw_data, item)
+                except Exception as ex:
+                    if self.crawler.settings.get("PDB_DEBUG", False):
+                        traceback.print_exc()
+                        import pdb
+                        pdb.set_trace()
+                    if ex:
+                        raise
+                if value:
                     break
 
-    if not val:
+    if not value:
         try:
             extract = sel_meta.get("extract")
             if is_after:
                 extract = sel_meta.get("extract_after") or extract
             if extract:
-                val = extract(item, response)
-        except Exception:
-            if debug:
-                print ">>>> extract error: ", traceback.format_exc()
-            raise
-        finally:
-            if debug:
-                print ">>>> extract value: ", val
+                value = extract(item, response)
+        except Exception as ex:
+            if self.crawler.settings.get("PDB_DEBUG", False):
+                traceback.print_exc()
+                import pdb
+                pdb.set_trace()
+            if ex:
+                raise
 
-    return val
+    return value
 
 
 if __name__ == "__main__":

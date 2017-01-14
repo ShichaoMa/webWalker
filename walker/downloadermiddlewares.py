@@ -25,22 +25,18 @@ from spiders.utils import Logger, get_ip_address, parse_cookie
 
 
 class DownloaderBaseMiddleware(Logger):
-
     def __init__(self, settings):
-
         self.set_logger(self.crawler)
         self.settings = settings
 
     @classmethod
     def from_crawler(cls, crawler):
-
         cls.crawler = crawler
         obj = cls(crawler.settings)
         return obj
 
 
 class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
-
     def __init__(self, settings, user_agent='Scrapy'):
 
         self.set_logger(self.crawler)
@@ -59,7 +55,6 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
     @classmethod
     def from_crawler(cls, crawler):
-
         cls.crawler = crawler
         obj = cls(crawler.settings)
         crawler.signals.connect(obj.spider_opened,
@@ -67,14 +62,10 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
         return obj
 
     def choice(self):
-
         while True:
-
             if self.user_agent_list:
-
                 for user_agent in self.user_agent_list:
                     yield user_agent
-
             else:
                 yield None
 
@@ -92,7 +83,6 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
 
 class CustomRedirectMiddleware(RedirectMiddleware, Logger):
-
     def __init__(self, crawler):
 
         self.set_logger(crawler)
@@ -134,7 +124,7 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
                                                [request.url]
             redirected.meta['priority'] = redirected.meta['priority'] + self.priority_adjust
             self.logger.debug("Redirecting %s to %s from %s for %s times " % (
-            reason, redirected.url, request.url, redirected.meta.get("redirect_times")))
+                reason, redirected.url, request.url, redirected.meta.get("redirect_times")))
             return redirected
         else:
             self.logger.info("Discarding %s: max redirections reached" % request.url)
@@ -146,18 +136,16 @@ class CustomRedirectMiddleware(RedirectMiddleware, Logger):
                 self.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
                 self.logger.error(
                     " in redicrect request error to failed pages url:%s, exception:%s, meta:%s" % (
-                    request.url, reason, request.meta))
+                        request.url, reason, request.meta))
 
-            raise IgnoreRequest("max redirections reached:%s"%reason)
+            raise IgnoreRequest("max redirections reached:%s" % reason)
 
     @classmethod
     def from_crawler(cls, crawler):
-
         return cls(crawler)
 
 
 class CustomCookiesMiddleware(CookiesMiddleware, Logger):
-
     def __init__(self, settings):
 
         self.settings = settings
@@ -214,7 +202,6 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
 
 class CustomRetryMiddleware(RetryMiddleware, Logger):
-
     EXCEPTIONS_TO_RETRY = (defer.TimeoutError, TimeoutError, DNSLookupError,
                            ConnectionRefusedError, ConnectionDone, ConnectError,
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
@@ -258,11 +245,10 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
 
             self.logger.error(exception)
-            self.logger.error("in retry request error %s" %traceback.format_exc())
+            self.logger.error("in retry request error %s" % traceback.format_exc())
             # 记录重了
             # spider.crawler.stats.set_failed_download(request.meta, "%s unhandle error. " % exception)
             raise IgnoreRequest("%s:%s unhandle error. " % (exception.__class__.__name__, exception))
-
 
     def _retry(self, request, reason, spider):
 
@@ -280,7 +266,8 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             # our priority setup is different from super
             retryreq.meta['priority'] = retryreq.meta['priority'] + self.crawler.settings.get(
                 "REDIRECT_PRIORITY_ADJUST")
-            self.logger.debug("in _retry retries times: %s, re-yield response.request: %s, reason: %s" % (retries, request.url, reason))
+            self.logger.debug("in _retry retries times: %s, re-yield response.request: %s, reason: %s" % (
+            retries, request.url, reason))
             return retryreq
 
         else:
@@ -291,13 +278,13 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
                 spider.crawler.stats.inc_total_pages(crawlid=request.meta['crawlid'])
             self.logger.error(
                 "in %s retry request error to failed pages url:%s, exception:%s, meta:%s" % (get_ip_address(),
-                request.url, reason, request.meta))
+                                                                                             request.url, reason,
+                                                                                             request.meta))
             self.logger.info("Gave up retrying %s (failed %d times): %s" % (request.url, retries, reason))
             raise IgnoreRequest("%s %s" % (reason, "retry many times. "))
 
 
 class ProxyMiddleware(DownloaderBaseMiddleware):
-
     def __init__(self, settings):
 
         super(ProxyMiddleware, self).__init__(settings)
@@ -319,12 +306,12 @@ class ProxyMiddleware(DownloaderBaseMiddleware):
             spider.change_proxy = False
 
         if self.proxy_list:
-            spider.proxy = spider.proxy or  self.choice()
+            spider.proxy = spider.proxy or self.choice()
 
         if spider.proxy:
-            proxy = "http://"+spider.proxy
+            proxy = "http://" + spider.proxy
             request.meta['proxy'] = proxy
-            self.logger.debug("use proxy %s to send request"%proxy, extra={"rasp_proxy":proxy})
+            self.logger.debug("use proxy %s to send request" % proxy, extra={"rasp_proxy": proxy})
             # #Use the following lines if your proxy requires authentication
             proxy_user_pass = self.settings.get("PROXY_PASSWORD")
             # # setup basic authentication for the proxy

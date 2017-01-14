@@ -85,7 +85,7 @@ class ClusterSpider(Spider, Logger):
             # 也就是说，如果增发请求后有字段被要求再次增发，当前（未再次增发之前）的处理函数会调用function和extract，不会调用after后缀的函数
             # 对于完成过一次增发请求后不需要再次增发的字段，函数带不带after后缀并没有什么区别 add by msc 2016.11.25
             is_after = (True if spider_item_field is not None else False) and not v.get("request")
-            val = get_val(v, response, item, is_after)
+            val = get_val(v, response, item, is_after, self, k)
             request_func = v.get("request")
 
             if request_func:
