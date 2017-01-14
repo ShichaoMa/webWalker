@@ -116,6 +116,8 @@ DOWNLOAD_TIMEOUT = 30
 # Avoid in-memory DNS cache. See Advanced topics of docs for info
 DNSCACHE_ENABLED = True
 
+# 使用pdb进行调试
+PDB_DEBUG = True
 
 # Local Overrides
 # ~~~~~~~~~~~~~~~
