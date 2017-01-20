@@ -14,14 +14,14 @@
 # INSTALL
 ## ubuntu && windows
 ```
-需要python2.7
-
+web-walker 1.2.2版本以下是python2.7版本
+web-walker 3.0.0版本以上是python3.6版本
 git clone https://github.com/ShichaoMa/webWalker.git
 cd webWalker/walker && (sudo) python setup.py install
 
 or
 
-(sudo) pip install web-walker
+(sudo) pip install web-walker==X.X.X
 ```
 
 # HELLOWORLD
