@@ -3,7 +3,7 @@ import time
 
 from scrapy.statscollectors import MemoryStatsCollector
 
-from spiders.exception_process import stats_wrapper
+from .spiders.exception_process import stats_wrapper
 
 
 class StatsCollector(MemoryStatsCollector):

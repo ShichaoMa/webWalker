@@ -60,7 +60,10 @@ def format_html_string(a_string):
 
 def re_search(re_str, text, dotall=True):
 
-    if isinstance(re_str, (str, unicode)):
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
+
+    if not isinstance(re_str, list):
         re_str = [re_str]
 
     for rex in re_str:

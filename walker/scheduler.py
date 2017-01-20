@@ -4,8 +4,8 @@ import random
 
 from scrapy.http.request import Request
 
-from walker.spiders.utils import Logger, parse_cookie
-from walker.spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
+from .spiders.utils import Logger, parse_cookie, P22P3Encoder
+from .spiders.exception_process import next_request_method_wrapper, enqueue_request_method_wrapper
 
 
 class Scheduler(Logger):
@@ -38,17 +38,18 @@ class Scheduler(Logger):
 
     def request_to_dict(self, request):
 
+        headers = dict([(item[0].decode("ascii"), item[0]) for item in request.headers.items()])
         req_dict = {
-            'url': request.url.decode('ascii'),
+            'url': request.url,
             'method': request.method,
-            'headers': dict(request.headers),
+            'headers': headers,
             'body': request.body,
             'cookies': request.cookies,
             'meta': request.meta,
             '_encoding': request._encoding,
             'dont_filter': request.dont_filter,
-            'callback': None if request.callback is None else request.callback.func_name,
-            'errback': None if request.errback is None else request.errback.func_name,
+            'callback': None if request.callback is None else request.callback.__name__,
+            'errback': None if request.errback is None else request.errback.__name__,
         }
         return req_dict
 
@@ -57,7 +58,7 @@ class Scheduler(Logger):
 
         req_dict = self.request_to_dict(request)
         key = "{sid}:item:queue".format(sid=req_dict['meta']['spiderid'])
-        self.redis_conn.zadd(key, json.dumps(req_dict), -int(req_dict["meta"]["priority"]))
+        self.redis_conn.zadd(key, json.dumps(req_dict, cls=P22P3Encoder), -int(req_dict["meta"]["priority"]))
         self.logger.debug("Crawlid: '{id}' Url: '{url}' added to queue"
                           .format(id=req_dict['meta']['crawlid'],
                                   url=req_dict['url']))
@@ -130,16 +131,13 @@ class Scheduler(Logger):
                 if 'cookie' in item and item['cookie'] is not None:
                     if isinstance(item['cookie'], dict):
                         req.cookies = item['cookie']
-                    elif isinstance(item['cookie'], basestring):
+                    elif isinstance(item['cookie'], (str, bytes)):
                         req.cookies = parse_cookie(item['cookie'])
 
                 return req
 
-
     def close(self, reason):
-
         self.logger.info("Closing Spider", {'spiderid': self.spider.name})
 
     def has_pending_requests(self):
-
         return False

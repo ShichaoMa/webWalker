@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 import os
+import sys
 import time
 import math
 import json
 import shutil
 import openpyxl
 import traceback
-
-from urllib import quote
-from urllib2 import Request, urlopen
+from urllib.parse import quote
+from urllib.request import urlopen
 
 from scrapy import Item
 from scrapy.signals import spider_closed
 
-from spiders import ITEM_FIELD
-from spiders.utils import Logger
+from .spiders import ITEM_FIELD
+from .spiders.utils import Logger, Request
 
 
 class BasePipeline(Logger):
@@ -241,15 +241,18 @@ class ExcelPipeline(BasePipeline):
 
         if not os.path.exists("task"):
             os.mkdir("task")
-        self.title = self.title or\
-                     map(lambda x: x[0], ITEM_FIELD[self.crawler.spidercls.name])
+        self.title = self.title or [x[0] for x in ITEM_FIELD[self.crawler.spidercls.name]]
 
     def write_title(self, fileobj, line):
 
         column_alp = self._yield_alpha()
 
         for field in self.title:
-            fileobj["%s%s"%(column_alp.next(), line)] = field
+            if sys.version_info >= (3, 0, 0):
+                c = column_alp.__next__()
+            else:
+                c = column_alp.next()
+            fileobj["%s%s"%(c, line)] = field
 
         line += 1
         return line
@@ -267,7 +270,11 @@ class ExcelPipeline(BasePipeline):
                 column_alp = self._yield_alpha()
 
                 for field in self.title:
-                    fileobj["%s%s" % (column_alp.next(), line)] = str(item[field])
+                    if sys.version_info >= (3, 0, 0):
+                        c = column_alp.__next__()
+                    else:
+                        c = column_alp.next()
+                    fileobj["%s%s" % (c, line)] = str(item[field])
 
                 item["success"] = True
                 self.excels[file_name][2] = line + 1

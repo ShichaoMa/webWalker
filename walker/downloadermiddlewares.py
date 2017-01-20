@@ -4,7 +4,8 @@ import base64
 import random
 import traceback
 
-from urlparse import urljoin
+from urllib.parse import urljoin
+
 from twisted.internet import defer
 from twisted.internet.error import TimeoutError, DNSLookupError, \
     ConnectionRefusedError, ConnectionDone, ConnectError, \
@@ -19,9 +20,9 @@ from scrapy.exceptions import IgnoreRequest, NotConfigured
 from scrapy.utils.response import response_status_message
 from scrapy.xlib.tx import ResponseFailed
 
-from spiders.exception_process import process_exception_method_wrapper, \
+from .spiders.exception_process import process_exception_method_wrapper, \
     process_requset_method_wrapper, process_response_method_wrapper
-from spiders.utils import Logger, get_ip_address, parse_cookie
+from .spiders.utils import Logger, get_ip_address, parse_cookie
 
 
 class DownloaderBaseMiddleware(Logger):
@@ -47,11 +48,11 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
             ua = settings.get('USER_AGENT', user_agent)
             self.user_agent_list = [ua]
         else:
-            self.user_agent_list = map(lambda y: y.strip(), filter(lambda x: x.strip(), user_agent_list.split('\n')))
+            self.user_agent_list = [i.strip() for i in user_agent_list.decode("utf-8").split('\n') if i.strip()]
 
         self.default_agent = user_agent
         self.chicer = self.choice()
-        self.user_agent = self.chicer.next() or user_agent
+        self.user_agent = self.chicer.__next__() or user_agent
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -73,7 +74,7 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
     def process_request(self, request, spider):
 
         if not hasattr(self, "change_proxy") or spider.change_proxy:
-            self.user_agent = self.chicer.next() or self.default_agent
+            self.user_agent = self.chicer.__next__() or self.default_agent
 
         if self.user_agent:
             request.headers.setdefault('User-Agent', self.user_agent)
@@ -289,10 +290,9 @@ class ProxyMiddleware(DownloaderBaseMiddleware):
 
         super(ProxyMiddleware, self).__init__(settings)
         proxy_list = settings.get("PROXY_LIST", "")
-        self.proxy_list = filter(lambda x: x.strip() and not x.strip().startswith("#"), proxy_list.split('\n'))
+        self.proxy_list = [x for x in proxy_list.decode("utf-8").split('\n') if x.strip() and not x.strip().startswith("#")]
 
     def choice(self):
-
         if self.proxy_list:
             return random.choice(self.proxy_list)
         else:

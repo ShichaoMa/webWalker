@@ -2,20 +2,63 @@
 import os
 import re
 import sys
+import json
 import errno
+import types
 import socket
 import struct
 import psutil
+import signal
 import logging
 import traceback
-
-from urllib import urlencode
-from urlparse import urlparse, urlunparse
+from urllib.request import Request
 from scrapy.http import Request, FormRequest
+from urllib.parse import urlparse, urlunparse, urlencode
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
 
-from helper import function_xpath_common, function_re_common, re_exchange, xpath_exchange
+from .helper import function_xpath_common, function_re_common, re_exchange, xpath_exchange
+
+
+class P22P3Encoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, bytes):
+           return obj.decode("utf-8")
+        if isinstance(obj, (types.GeneratorType, map, filter)):
+            return list(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+def timeout(timeout_time, default):
+    '''
+    Decorate a method so it is required to execute in a given time period,
+    or return a default value.
+    '''
+
+    class DecoratorTimeout(Exception):
+        pass
+
+    def timeout_function(f):
+        def f2(*args):
+            def timeout_handler(signum, frame):
+                raise DecoratorTimeout()
+
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            # triger alarm in timeout_time seconds
+            signal.alarm(timeout_time)
+            try:
+                retval = f(*args)
+            except DecoratorTimeout:
+                return default
+            finally:
+                signal.signal(signal.SIGALRM, old_handler)
+            signal.alarm(0)
+            return retval
+
+        return f2
+
+    return timeout_function
 
 
 class LoggerDiscriptor(object):
@@ -217,7 +260,7 @@ def url_item_arg_increment(index, url, count):
         start = 1
     parts = urlparse(url)
     if parts.query:
-        query = dict(map(lambda x: x.split("="), parts.query.split("&")))
+        query = dict(x.split("=") for x in parts.query.split("&"))
         query[index] = start + count
     else:
         query = {index:count+1}
@@ -274,7 +317,6 @@ def get_val(sel_meta, response, item=None, is_after=False, self=None, key=None):
             selector = expression_list.pop(0)
         except IndexError:
             break
-
         expressions = sel_meta.get(selector)
 
         if expressions:
@@ -316,5 +358,4 @@ def get_val(sel_meta, response, item=None, is_after=False, self=None, key=None):
 
 
 if __name__ == "__main__":
-    print url_path_arg_increment(r'subpath=(,Pageindex/.*?(?=\d))(\d+)($)',
-                           "http://www1.bloomingdales.com/shop/shoes/all-shoes/Shoe_style,Women_shoes_regular_size_t/Flats,6.5?id=17411")
+    pass

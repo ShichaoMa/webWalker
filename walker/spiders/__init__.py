@@ -2,7 +2,8 @@
 import time
 import copy
 import socket
-from urlparse import urlparse, urljoin
+
+from urllib.parse import urlparse, urljoin
 
 from scrapy import Field, Item, signals
 from scrapy.exceptions import DontCloseSpider
@@ -10,9 +11,10 @@ from scrapy.http import Request
 from scrapy.spiders import Spider
 from scrapy.utils.response import response_status_message
 
-from exception_process import parse_method_wrapper, parse_next_method_wrapper
-from utils import get_ip_address, url_arg_increment, Logger, get_val,\
-     url_item_arg_increment, url_path_arg_increment, LoggerDiscriptor, send_request_wrapper
+from .exception_process import parse_method_wrapper, parse_next_method_wrapper
+from .utils import get_ip_address, url_arg_increment, Logger, get_val,\
+     url_item_arg_increment, url_path_arg_increment, LoggerDiscriptor, \
+    send_request_wrapper
 
 
 BASE_FIELD = ["success", "domain", "exception", "crawlid", "spiderid", "workerid", "response_url", "status_code", "status_msg", "url", "seed", "timestamp"]
@@ -64,7 +66,7 @@ class ClusterSpider(Spider, Logger):
     def get_item_cls(self):
 
         return type("%sItem"%self.name.capitalize(), (self.base_item_cls, ),
-                    dict(zip(map(lambda x:x[0], ITEM_FIELD[self.name]), self.gen_field)))
+                    dict(zip([x[0] for x in ITEM_FIELD[self.name]], self.gen_field)))
 
     def reset_item(self, dict):
 
@@ -224,7 +226,7 @@ class ClusterSpider(Spider, Logger):
             else:
                 field.pop(0)
 
-        self.logger.debug("start in parse %s ..." % map(lambda x: x[0], field))
+        self.logger.debug("start in parse %s ..." % [x[0] for x in field])
         item = self.reset_item(response.meta['item_half'])
         # 删除增发请求的这个字段的request，防止递归 add by msc 2016.11.26
         del field[0][1]["request"]

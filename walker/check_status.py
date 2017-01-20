@@ -1,4 +1,5 @@
 # -*- coding:utf-8 -*-
+import sys
 import fnmatch
 import argparse
 
@@ -21,10 +22,10 @@ def start(crawlid, host, custom):
     redis_conn = Redis(host)
     key = "crawlid:%s"%crawlid
     data = redis_conn.hgetall(key)
-    failed_keys = filter(lambda x: fnmatch.fnmatch(x, "failed_download_*"), data.keys())
+    failed_keys = [x for x in data.keys() if fnmatch.fnmatch(x, "failed_download_*")]
     format(data)
     for fk in failed_keys:
-        print_if = raw_input("show the %s? y/n default n:"%fk.replace("_", " "))
+        print_if = input("show the %s? y/n default n:"%fk.replace("_", " "))
         if print_if == "y":
             key_ = "%s:%s" % (fk, crawlid)
             p = redis_conn.hgetall(key_)
