@@ -3,7 +3,7 @@ from .redis_feed import RedisFeed
 from .check_status import main
 
 
-VERSION = '1.2.2'
+VERSION = '3.0.0'
 
 AUTHOR = "cn"
 
