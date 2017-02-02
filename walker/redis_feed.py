@@ -3,8 +3,6 @@ import sys
 import argparse
 import traceback
 
-from tldextract import extract
-
 
 class RedisFeed:
 
@@ -20,7 +18,6 @@ class RedisFeed:
         self.host = host
         self.custom = custom
         self.inc = 0
-        self.extract = extract
         self.failed_count, self.failed_rate, self.sucess_rate = 0, 0, 0
 
         if self.custom:
@@ -67,7 +64,7 @@ class RedisFeed:
                         self.spiderid,
                         self.priority
                     )
-                    self.failed_count += self.feed(self.get_name(url), json_req)
+                    self.failed_count += self.feed(self.get_name(), json_req)
                     sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
                 self.redis_conn.hset("crawlid:%s" % self.crawlid, "total_pages", lines_count)
                 self.redis_conn.expire("crawlid:%s" % self.crawlid, 2 * 24 * 60 * 60)
@@ -83,16 +80,12 @@ class RedisFeed:
                     self.spiderid,
                     self.priority,
                 )
-                self.failed_count += self.feed(self.get_name(url), json_req)
+                self.failed_count += self.feed(self.get_name(), json_req)
                 sucess_rate, failed_rate = self.show_process_line(lines_count, index + 1, self.failed_count)
         print "\ntask feed complete. sucess_rate:%s%%, failed_rate:%s%%"%(sucess_rate, failed_rate)
 
-    def get_name(self, url):
-        ex_res = self.extract(url)
-        return "{sid}:{dom}.{suf}:queue".format(
-            sid=self.spiderid,
-            dom=ex_res.domain,
-            suf=ex_res.suffix)
+    def get_name(self):
+        return "{sid}:item:queue".format(sid=self.spiderid)
 
     def feed(self, queue_name, req):
 
