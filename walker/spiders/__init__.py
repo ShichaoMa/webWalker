@@ -29,6 +29,7 @@ class ClusterSpider(Spider, Logger):
     proxy = None
     change_proxy = None
     logger = LoggerDiscriptor()
+    have_duplicate = False
 
     def __init__(self, *args, **kwargs):
 
@@ -122,6 +123,9 @@ class ClusterSpider(Spider, Logger):
         response.meta["priority"] -= 20
 
         for item_url in item_urls:
+            if self.have_duplicate:
+                if self.duplicate_filter(response, item_url, self.have_duplicate):
+                    continue
             response.meta["url"] = item_url
             yield Request(url=item_url,
                           callback=self.parse_item,
@@ -155,12 +159,6 @@ class ClusterSpider(Spider, Logger):
         self.logger.debug("start response in parse_item")
         item = self._enrich_base_data(response)
         request = self.common_property(response, item)
-
-        if getattr(self, 'have_duplicate', False):
-            result = self.total_pages_decrement(response, item.get("product_id"))
-            if not result:
-                return
-
         return self.process_forward(request, response, item)
 
     def process_forward(self, request, response, item):
@@ -173,17 +171,17 @@ class ClusterSpider(Spider, Logger):
         self.crawler.stats.inc_crawled_pages(response.meta['crawlid'])
         return item
 
-    def total_pages_decrement(self, response, id):
+    def duplicate_filter(self, response, url, func):
 
         crawlid = response.meta["crawlid"]
-
-        if self.redis_conn.sismember("crawlid:%s:model" % crawlid, id):
-            self.crawler.stats.inc_total_pages(response.meta['crawlid'], -1)
-            return False
-        else:
-            self.redis_conn.sadd("crawlid:%s:model" % crawlid, id)
-            self.redis_conn.expire("crawlid:%s:model" % crawlid, self.crawler.settings.get("DUPLICATE_TIMEOUT", 60*60))
+        common_part = func(url)
+        if self.redis_conn.sismember("crawlid:%s:model" % crawlid, common_part):
+            #self.crawler.stats.inc_total_pages(response.meta['crawlid'], -1)
             return True
+        else:
+            self.redis_conn.sadd("crawlid:%s:model" % crawlid, common_part)
+            self.redis_conn.expire("crawlid:%s:model" % crawlid, self.crawler.settings.get("DUPLICATE_TIMEOUT", 60*60))
+            return False
 
     def _enrich_base_data(self, response):
         item = self.get_item_cls()()
@@ -251,4 +249,3 @@ def start(spiders, globals, module_name, item_field, item_xpath, page_xpath):
         v.update({"name": k})
         exec("cls_%s = create(k, v)"% index, locals(), globals)
         index += 1
-

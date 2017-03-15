@@ -86,12 +86,12 @@ class Logger(object):
 
     def init_logger(self, crawler):
         my_level = crawler.settings.get('SC_LOG_LEVEL', 'INFO')
-        my_name = "%s_%s" % (crawler.spidercls.name, get_ip_address())
+        my_name = "%s_%s" % (crawler.spidercls.name, get_ip_address().replace(".", "_"))
         my_output = crawler.settings.get('SC_LOG_TYPE', "FILE")
         my_json = crawler.settings.get('SC_LOG_JSON', True)
         my_dir = crawler.settings.get('SC_LOG_DIR', 'logs')
         my_bytes = crawler.settings.get('SC_LOG_MAX_BYTES', '10MB')
-        my_file = "%s_%s.log" % (crawler.spidercls.name, get_ip_address())
+        my_file = "%s_%s.log" % (crawler.spidercls.name, get_ip_address().replace(".", "_"))
         my_backups = crawler.settings.get('SC_LOG_BACKUPS', 5)
         st = crawler.settings.get("SPIDER_REQ")
 
