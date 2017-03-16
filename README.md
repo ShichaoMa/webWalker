@@ -135,7 +135,7 @@ feed -c test_04 -s ashford -uf item.txt --custom
 # 使用自带的costom-redis 需要加上 --custom
 check test_01 --custom
 ```
-# DECUMENT
+# DECUMENTATION
 参见[wiki](https://github.com/ShichaoMa/webWalker/wiki)
 
 # 本人python工作经验一年多，接触爬虫不到半年，开发这个框架仅仅用于学习和交流，可能存在诸多缺陷和bug，欢迎大家为我指正，可以pull requests给我哦，谢谢！
