@@ -25,7 +25,7 @@ or
 ```
 
 # HELLOWORLD
-- 安装完毕后（推荐pip安装）使用scrapy生成一个项目
+1. 安装完毕后（推荐pip安装）使用scrapy生成一个项目
 ```
 ubuntu@dev:~/myprojects$ scrapy startproject demo
 New Scrapy project 'demo' created in:
@@ -49,11 +49,11 @@ You can start your first spider with:
 
 ```
 
-- 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字
+1. 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字
 
-- 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/\_\_init\_\_.py 替掉原来的文件
+2. 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/\_\_init\_\_.py 替掉原来的文件
 
-- 在spiders目录下，创建page_xpath.py, item_xpath.py, item_field.py, spiders.py，编写以下内容
+3. 在spiders目录下，创建page_xpath.py, item_xpath.py, item_field.py, spiders.py，编写以下内容
 ```
 # spiders.py
 
@@ -108,21 +108,21 @@ ITEM_FIELD = { # 商品页中，所需信息的获取方式，具体策略参见
 }
 
 ```
-- 修改demo/settings.py 文件，或者直接新建localsettings.py，增加自定义配置，要修改的项目在settings.py已注明
+4. 修改demo/settings.py 文件，或者直接新建localsettings.py，增加自定义配置，要修改的项目在settings.py已注明
 
-- 启动redis
+5. 启动redis
 ```
 #如果没有安装redis，可以使用自带的custom-redis，配置文件中需写明CUSTOM_REDIS=True
 custom-redis-server -p 6379
 
 ```
-- 启动爬虫
+6. 启动爬虫
 ```
 cd demo
 scrapy crawl bluefly
 
 ```
-- 投放任务
+7. 投放任务
 ```
 # 使用自带的costom-redis 需要加上 --custom
 # 投放分类链接
@@ -130,7 +130,7 @@ feed -c test_01 -s bluefly -u "http://www.bluefly.com/assortment/the-boot-shop-o
 # 投放项目链接，支持多个项目链接一起投放，把每个链接按行放到一个文件中即可
 feed -c test_04 -s ashford -uf item.txt --custom
 ```
-- 查看任务状态
+8. 查看任务状态
 ```
 # 使用自带的costom-redis 需要加上 --custom
 check test_01 --custom
