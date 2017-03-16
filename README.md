@@ -51,7 +51,7 @@ You can start your first spider with:
 
 - 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字
 
-- 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/__init__.py 替掉原来的文件
+- 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/\_\_init\_\_.py 替掉原来的文件
 
 - 在spiders目录下，创建page_xpath.py, item_xpath.py, item_field.py, spiders.py，编写以下内容
 ```
