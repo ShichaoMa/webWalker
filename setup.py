@@ -7,7 +7,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '1.2.3'
+VERSION = '1.2.4'
 
 AUTHOR = "cn"
 
@@ -54,7 +54,7 @@ setup(
     url = URL,
     license = LICENSE,
     packages = PACKAGES,
-    install_requires=["scrapy>=1.0.5", "log-to-kafka>=1.0.3", "custom-redis", "openpyxl", "psutil", "pdb"],
+    install_requires=["scrapy>=1.0.5", "log-to-kafka==1.0.5", "custom-redis==1.1.4", "openpyxl", "psutil", "pdb"],
     include_package_data=True,
     zip_safe=True,
 )
