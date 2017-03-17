@@ -1,13 +1,11 @@
 # -*- coding:utf-8 -*-
-import codecs
-import os
 try:
     from setuptools import setup, find_packages
 except:
     from distutils.core import setup
 
 
-VERSION = '3.0.2'
+VERSION = '3.0.3'
 
 AUTHOR = "cn"
 
@@ -16,14 +14,14 @@ AUTHOR_EMAIL = "308299269@qq.com"
 URL = "https://www.github.com/ShichaoMa/webWalker"
 
 
-def read(fname):
-    return codecs.open(os.path.join(os.path.dirname(__file__), fname)).read()
-
 NAME = "web-walker"
 
 DESCRIPTION = "your can crawl web pages with litte settings. based on scrapy. "
 
-LONG_DESCRIPTION = read("README.rst")
+try:
+    LONG_DESCRIPTION = open("README.rst").read()
+except UnicodeDecodeError:
+    LONG_DESCRIPTION = open("README.rst", encoding="utf-8").read()
 
 KEYWORDS = "crawl web spider scrapy"
 
