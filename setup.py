@@ -13,7 +13,6 @@ AUTHOR_EMAIL = "308299269@qq.com"
 
 URL = "https://www.github.com/ShichaoMa/webWalker"
 
-
 NAME = "web-walker"
 
 DESCRIPTION = "your can crawl web pages with litte settings. based on scrapy. "

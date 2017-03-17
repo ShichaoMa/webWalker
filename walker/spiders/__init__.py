@@ -231,8 +231,6 @@ class ClusterSpider(Spider, Logger):
         return self.process_forward(self.common_property(response, item, field), response, item)
 
 
-
-
 def start(spiders, globals, module_name, item_field, item_xpath, page_xpath):
 
     ITEM_FIELD.update(item_field)
