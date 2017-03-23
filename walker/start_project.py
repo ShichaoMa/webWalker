@@ -41,7 +41,7 @@ class CustomStart(startproject.Command):
               (project_name, self.templates_dir))
         print("    %s\n" % abspath(project_dir))
         print("You can start the demo spider with:")
-        print("    custom-redis-server -h 127.0.0.1 -p 6379")
+        print("    custom-redis-server --host 127.0.0.1 -p 6379")
         print("    cd %s" % project_dir)
         print("    scrapy crawl bluefly")
 

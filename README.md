@@ -49,8 +49,37 @@ You can start your first spider with:
 
 ```
 
-1. 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字
-1. 对于使用python3的用户，并且web-walker>=3.0.7,可以使用startproject demo直接生成一个新项目，同时省略第1,2,3,4步
+
+1. 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字,对于使用python3的用户，并且web-walker>=3.1.0,可以使用startproject demo直接生成一个新项目，同时省略第1,2,3,4步
+```
+longen@dataServer:~$ startproject demo
+New web-walker project 'demo', using template directory '/home/longen/.pyenv/versions/3.6.0/lib/python3.6/site-packages/walker/templates/project', created in:
+    /home/longen/demo
+
+You can start the demo spider with:
+    custom-redis-server --host 127.0.0.1 -p 6379
+    cd demo
+    scrapy crawl bluefly
+longen@dataServer:~$ cd demo/
+longen@dataServer:~/demo$ tree
+.
+├── demo
+│   ├── __init__.py
+│   ├── proxy.list
+│   ├── __pycache__
+│   ├── settings.py
+│   └── spiders
+│       ├── __init__.py
+│       ├── item_field.py
+│       ├── item_xpath.py
+│       ├── page_xpath.py
+│       ├── __pycache__
+│       └── spiders.py
+└── scrapy.cfg
+
+4 directories, 9 files
+
+```
 
 2. 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/\_\_init\_\_.py 替掉原来的文件
 
