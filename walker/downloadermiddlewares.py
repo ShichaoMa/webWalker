@@ -52,8 +52,8 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
             self.user_agent_list = [i.strip() for i in user_agent_list.decode("utf-8").split('\n') if i.strip()]
 
         self.default_agent = user_agent
-        self.chicer = self.choice()
-        self.user_agent = self.chicer.__next__() or user_agent
+        self.choicer = self.choice()
+        self.user_agent = self.choicer.__next__() or user_agent
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -73,12 +73,11 @@ class CustomUserAgentMiddleware(UserAgentMiddleware, Logger):
 
     @process_requset_method_wrapper
     def process_request(self, request, spider):
-
         if not hasattr(self, "change_proxy") or spider.change_proxy:
-            self.user_agent = self.chicer.__next__() or self.default_agent
+            self.user_agent = self.choicer.__next__() or self.default_agent
 
         if self.user_agent:
-            request.headers.setdefault('User-Agent', self.user_agent)
+            request.headers['User-Agent'] = self.user_agent
             self.logger.debug('User-Agent: {} {}'.format(request.headers.get('User-Agent'), request))
         else:
             self.logger.error('User-Agent: ERROR with user agent list')
@@ -258,7 +257,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
 
         if request.meta.get("if_next_page"):
             spider.change_proxy = True
-            self.logger.debug("in _retry re-yield next_pages request: %s" % request.url)
+            self.logger.debug("in _retry re-yield next_pages request: %s, reason: %s. " % (request.url, reason))
             return request.copy()
         elif retries <= self.max_retry_times:
             spider.change_proxy = True
@@ -268,7 +267,7 @@ class CustomRetryMiddleware(RetryMiddleware, Logger):
             # our priority setup is different from super
             retryreq.meta['priority'] = retryreq.meta['priority'] + self.crawler.settings.get(
                 "REDIRECT_PRIORITY_ADJUST")
-            self.logger.debug("in _retry retries times: %s, re-yield response.request: %s, reason: %s" % (
+            self.logger.debug("in _retry retries times: %s, re-yield request: %s, reason: %s" % (
             retries, request.url, reason))
             return retryreq
 

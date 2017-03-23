@@ -50,6 +50,7 @@ You can start your first spider with:
 ```
 
 1. 或者直接从test中复制[myapp](https://github.com/ShichaoMa/webWalker/tree/master/test)，如果要改项目名字，记得修改scarpy.cfg中的名字
+1. 对于使用python3的用户，并且web-walker>=3.0.7,可以使用startproject demo直接生成一个新项目，同时省略第1,2,3,4步
 
 2. 删除掉其中的demo/items.py demo/piplines.py，并使用myapp/settings.py，myapp/spiders/\_\_init\_\_.py 替掉原来的文件
 

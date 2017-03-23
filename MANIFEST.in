@@ -1,3 +1,4 @@
 include README.rst
 include requirements.txt
 recursive-include walker *list
+recursive-include walker/templates *

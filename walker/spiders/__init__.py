@@ -4,6 +4,7 @@ import copy
 import socket
 
 from urllib.parse import urlparse, urljoin
+from itertools import repeat
 
 from scrapy import Field, Item, signals
 from scrapy.exceptions import DontCloseSpider
@@ -17,7 +18,8 @@ from .utils import get_ip_address, url_arg_increment, Logger, get_val,\
     send_request_wrapper
 
 
-BASE_FIELD = ["success", "domain", "exception", "crawlid", "spiderid", "workerid", "response_url", "status_code", "status_msg", "url", "seed", "timestamp"]
+BASE_FIELD = ["success", "domain", "exception", "crawlid", "spiderid", "workerid",
+              "response_url", "status_code", "status_msg", "url", "seed", "timestamp"]
 ITEM_FIELD = {}
 ITEM_XPATH = {}
 PAGE_XPATH = {}
@@ -35,42 +37,30 @@ class ClusterSpider(Spider, Logger):
 
         Spider.__init__(self, *args, **kwargs)
         self.worker_id = ("%s_%s" % (socket.gethostname(), get_ip_address())).replace('.', '_')
-        self.gen_field = self._yield_field()
         self.base_item_cls = type("RawResponseItem", (Item, ),
-                                  dict(zip(BASE_FIELD, self.gen_field)))
+                                  dict(zip(BASE_FIELD, repeat(Field()))))
+        self.redis_conn = None
 
     def _set_crawler(self, crawler):
-
         Spider._set_crawler(self, crawler)
         self.crawler.signals.connect(self.spider_idle,
                                      signal=signals.spider_idle)
 
-
     def spider_idle(self):
-
-        print('Dont close spider........')
+        print('Don\'t close spider......')
         raise DontCloseSpider
 
     def set_logger(self, crawler):
-
         Logger.set_logger(self, crawler)
 
     def set_redis(self, redis_conn):
-
         self.redis_conn = redis_conn
 
-    def _yield_field(self):
-
-        while True:
-            yield Field()
-
     def get_item_cls(self):
-
         return type("%sItem"%self.name.capitalize(), (self.base_item_cls, ),
-                    dict(zip([x[0] for x in ITEM_FIELD[self.name]], self.gen_field)))
+                    dict(zip([x[0] for x in ITEM_FIELD[self.name]], repeat(Field()))))
 
     def reset_item(self, dict):
-
         item = self.get_item_cls()()
 
         for key in dict.keys():
@@ -107,8 +97,12 @@ class ClusterSpider(Spider, Logger):
 
     @parse_method_wrapper
     def parse(self, response):
-
-        self.logger.debug("start response in parse")
+        """
+        解析分类链接
+        :param response:
+        :return:
+        """
+        self.logger.debug("Start parse response in parse. ")
         item_urls = [urljoin(response.url, x) for x in set(response.xpath("|".join(ITEM_XPATH[self.name])).extract())]
         self.crawler.stats.inc_total_pages(response.meta['crawlid'], len(item_urls))
 
@@ -155,14 +149,17 @@ class ClusterSpider(Spider, Logger):
 
     @parse_method_wrapper
     def parse_item(self, response):
-
-        self.logger.debug("start response in parse_item")
+        """
+        解析详情页链接
+        :param response:
+        :return:
+        """
+        self.logger.debug("Start parse response in parse_item. ")
         item = self._enrich_base_data(response)
         request = self.common_property(response, item)
         return self.process_forward(request, response, item)
 
     def process_forward(self, request, response, item):
-
         if request:
             return request
 
@@ -172,11 +169,10 @@ class ClusterSpider(Spider, Logger):
         return item
 
     def duplicate_filter(self, response, url, func):
-
         crawlid = response.meta["crawlid"]
         common_part = func(url)
+
         if self.redis_conn.sismember("crawlid:%s:model" % crawlid, common_part):
-            #self.crawler.stats.inc_total_pages(response.meta['crawlid'], -1)
             return True
         else:
             self.redis_conn.sadd("crawlid:%s:model" % crawlid, common_part)
@@ -198,7 +194,6 @@ class ClusterSpider(Spider, Logger):
         return item
 
     def errback(self, failure):
-
         if failure and failure.value and hasattr(failure.value, 'response'):
             response = failure.value.response
 
@@ -214,7 +209,6 @@ class ClusterSpider(Spider, Logger):
 
     @parse_next_method_wrapper
     def next_request_callback(self, response):
-
         key = response.meta.get("next_key")
         field = copy.deepcopy(ITEM_FIELD[self.name])
 
@@ -226,13 +220,12 @@ class ClusterSpider(Spider, Logger):
 
         self.logger.debug("start in parse %s ..." % [x[0] for x in field])
         item = self.reset_item(response.meta['item_half'])
-        # 删除增发请求的这个字段的request，防止递归 add by msc 2016.11.26
+        # 删除增发请求的这个字段的request，防止递归 2016.11.26
         del field[0][1]["request"]
         return self.process_forward(self.common_property(response, item, field), response, item)
 
 
 def start(spiders, globals, module_name, item_field, item_xpath, page_xpath):
-
     ITEM_FIELD.update(item_field)
     ITEM_XPATH.update(item_xpath)
     PAGE_XPATH.update(page_xpath)

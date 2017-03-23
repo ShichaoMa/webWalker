@@ -5,7 +5,7 @@ except:
     from distutils.core import setup
 
 
-VERSION = '3.0.3'
+VERSION = '3.0.9'
 
 AUTHOR = "cn"
 
@@ -43,6 +43,7 @@ setup(
         'console_scripts': [
             'feed = walker:feed',
             'check = walker:check',
+            'startproject = walker:start_project'
         ],
     },
     keywords = KEYWORDS,
@@ -51,7 +52,7 @@ setup(
     url = URL,
     license = LICENSE,
     packages = PACKAGES,
-    install_requires=["scrapy>=1.0.5", "log-to-kafka>=1.0.3", "custom-redis", "openpyxl", "psutil", "pdb"],
+    install_requires=["scrapy>=1.0.5", "log-to-kafka>=1.0.8", "custom-redis>=3.0.4", "openpyxl", "psutil", "pdb"],
     include_package_data=True,
     zip_safe=True,
 )

@@ -1,9 +1,9 @@
 # -*- coding:utf-8 -*-
 from .redis_feed import RedisFeed
 from .check_status import main
+from .start_project import start as start_project
 
-
-VERSION = '3.0.2'
+VERSION = '3.0.9'
 
 AUTHOR = "cn"
 
