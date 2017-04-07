@@ -38,7 +38,7 @@ class Scheduler(Logger):
 
     def request_to_dict(self, request):
 
-        headers = dict([(item[0].decode("ascii"), item[0]) for item in request.headers.items()])
+        headers = dict([(item[0].decode("ascii"), item[1]) for item in request.headers.items()])
         req_dict = {
             'url': request.url,
             'method': request.method,

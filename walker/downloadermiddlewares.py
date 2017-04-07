@@ -181,8 +181,9 @@ class CustomCookiesMiddleware(CookiesMiddleware, Logger):
 
         request.headers.pop('Cookie', None)
         jar.add_cookie_header(request)
-        headers.pop('Cookie', None)
-        request.headers.update(headers)
+        for key in headers.keys():
+            if key not in request.headers:
+                request.headers[key] = [headers[key]]
         cl = request.headers.getlist('Cookie')
         if cl:
             msg = "Sending cookies to: %s" % request + os.linesep
