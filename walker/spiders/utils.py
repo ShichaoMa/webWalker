@@ -11,8 +11,8 @@ import psutil
 import signal
 import logging
 import traceback
-from urllib.request import Request
-from scrapy.http import Request, FormRequest
+
+from scrapy.http import Request
 from urllib.parse import urlparse, urlunparse, urlencode
 
 from log_to_kafka import LogFactory, KafkaHandler, FixedConcurrentRotatingFileHandler, ConcurrentRotatingFileHandler
@@ -139,20 +139,14 @@ def send_request_wrapper(response, item, k, callback):
                 response.meta["cookie"] = cookies
                 response.meta["dont_update_cookies"] = True
 
-            if url and method == "post":
-                return FormRequest(
-                    url=url,
-                    callback=callback,
-                    formdata=body,
-                    meta=response.meta,
-                    dont_filter=True)
             if url:
                 return Request(
-                        url=url,
-                        meta=response.meta,
-                        callback=callback,
-                        dont_filter=response.request.dont_filter,
-                    )
+                    method=method or "GET",
+                    url=url,
+                    callback=callback,
+                    body=body,
+                    meta=response.meta,
+                    dont_filter=True)
 
         return wrapper
     return process_request
