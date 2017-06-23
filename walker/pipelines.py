@@ -8,13 +8,13 @@ import shutil
 import openpyxl
 import traceback
 from urllib.parse import quote
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 
 from scrapy import Item
 from scrapy.signals import spider_closed
 
 from .spiders import ITEM_FIELD
-from .spiders.utils import Logger, Request
+from .spiders.utils import Logger
 
 
 class BasePipeline(Logger):
