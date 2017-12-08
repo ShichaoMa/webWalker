@@ -2,6 +2,8 @@
 基于scrapy的二次开发框架，通过简单配置，即可实现一个网站分类中所有项目指定信息的抓取<br>
 常驻式进程，启动之后，通过feed投放任务，使用redis实现分布式，多台机器多个爬虫实时监控任务抓取
 
+### 本项目已过时，推荐使用更符合scrapy编码规范的升级版[structure_spider](https://github.com/ShichaoMa/structure_spider)，更强的可扩展性和自由度。
+
 ## 需要掌握技能
 - xpath表达式，正则表达式，以及css表达式，至少会其中一项
 - python 字典和列表数据结构
